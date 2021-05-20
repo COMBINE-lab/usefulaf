@@ -28,8 +28,8 @@ load_fry <- function(frydir, which_counts = c('S','A'), verbose = FALSE) {
     ng = as.integer(ng/3)
   }
   # read in gene name file and cell barcode file
-  afg = read.csv(file.path(frydir, "alevin", "quants_mat_cols.txt"), strip.white = TRUE, header = FALSE, nrows = ng, col.names = c("gene_ids"))
-  afc = read.csv(file.path(frydir, "alevin", "quants_mat_rows.txt"), strip.white = TRUE,header = FALSE,col.names = c("barcodes"))
+  afg = read.csv(file.path(frydir, "alevin", "quants_mat_cols.txt"), strip.white = TRUE, header = FALSE, nrows = ng, col.names = c("gene_ids"), row.names = 1)
+  afc = read.csv(file.path(frydir, "alevin", "quants_mat_rows.txt"), strip.white = TRUE,header = FALSE,col.names = c("barcodes"), row.names = 1)
 
   # if in usa_mode, sum up counts in different status according to which_counts
   if (usa_mode) {
