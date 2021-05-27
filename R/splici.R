@@ -37,7 +37,7 @@ make_splici_txome <- function(gtf_path, genome_path, flank_length, output_dir) {
     write.table(df, file.path(output_dir, "t2g.tsv"), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
     df <- df %>%
       dplyr::mutate(gene_id = stringr::word(gene_id, 1, sep = '-'),
-                    status = ifelse(stringr::str_count(transcript_id, '-') > 0, 'U', 'S'))
+                    status = ifelse(stringr::str_detect(transcript_id, '-'), 'U', 'S'))
 
     writeXStringSet(seqs, file.path(output_dir, "transcriptome_splici.fa"), format = "fasta")
     write.table(df, file.path(output_dir, "t2g_3col.tsv"), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
