@@ -1,6 +1,6 @@
 make_splici_txome <- function(gtf_path, genome_path, flank_length, output_dir) {
     # assumes the following packages have been imported
-    # eisaR, Biostrings, BSgenome, stringr
+    # eisaR, Biostrings, BSgenome, dplyr, stringr
     dir.create(output_dir)
 
     gtf <- file.path(gtf_path)
@@ -18,7 +18,7 @@ make_splici_txome <- function(gtf_path, genome_path, flank_length, output_dir) {
     # load the genome sequence
     x <- Biostrings::readDNAStringSet(file.path(genome_path))
     # fix the names
-    names(x) <- sapply(strsplit(names(x), " "), .subset, 1)
+    names(x) <- stringr::word(names(x), 1)
 
     seqlevels(grl) <- seqlevels(x)
     seqlengths(grl) <- seqlengths(x)
@@ -35,8 +35,9 @@ make_splici_txome <- function(gtf_path, genome_path, flank_length, output_dir) {
 
     df <- getTx2Gene(grl)
     write.table(df, file.path(output_dir, "t2g.tsv"), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
-    df[, "status"] = sapply(strsplit(df$transcript_id, "-"), function(x) if(length(x) == 2){"U"} else {"S"})
-    df[, "gene_id"] = sapply(strsplit(df$gene_id, "-"), function(x) x[1])
+    df <- df %>%
+      dplyr::mutate(gene_id = stringr::word(gene_id, 1, sep = '-'),
+                    status = ifelse(stringr::str_count(transcript_id, '-') > 0, 'U', 'S'))
 
     writeXStringSet(seqs, file.path(output_dir, "transcriptome_splici.fa"), format = "fasta")
     write.table(df, file.path(output_dir, "t2g_3col.tsv"), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
