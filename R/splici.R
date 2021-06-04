@@ -25,7 +25,7 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   if (!file.exists(genome_path)) {
     stop("The following file does not exist: \n", genome_path)
   }
-  file_name_prefix = paste0("transcriptome_splici_fl", flank_length)
+  file_name_prefix = paste0("transcriptome_splici_fl", flank_length, "_")
   
 
   #########################################################################################################
