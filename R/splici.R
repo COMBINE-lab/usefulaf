@@ -8,6 +8,15 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   ########################################################################################################
   # Preprocessing
   ########################################################################################################
+  
+  suppressPackageStartupMessages({
+    library(eisaR)
+    library(Biostrings)
+    library(BSgenome)
+    library(stringr)
+    library(GenomicFeatures)
+  })
+  
   if (!dir.exists(output_dir)) {
     dir.create(file.path(output_dir), showWarnings = FALSE)
   }  
@@ -25,9 +34,9 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   if (!file.exists(genome_path)) {
     stop("The following file does not exist: \n", genome_path)
   }
-  file_name_prefix = paste0("transcriptome_splici_fl", flank_length, "_")
+  file_name_prefix = paste0("transcriptome_splici_fl", flank_length)
   
-
+  
   #########################################################################################################
   # Process gtf to get spliced and introns
   #########################################################################################################
@@ -42,14 +51,14 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
     joinOverlappingIntrons = TRUE, 
     verbose = TRUE
   ))
-
+  
   #########################################################################################################
   # Get spliced related stuffs
   #########################################################################################################
   
   # spliced ranges has no dash in it
   spliced_grl = grl[sapply(strsplit(names(grl), "-"), length) == 1]
-
+  
   #########################################################################################################
   # Get reduced introns
   #########################################################################################################
@@ -85,7 +94,7 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   #########################################################################################################
   # extract sequences from genome
   #########################################################################################################
-
+  
   message("============extracting spliced and intron sequences from genome============")  
   
   # load the genome sequence
@@ -95,7 +104,7 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   
   
   grl = c(spliced_grl, intron_grl)
-
+  
   # make sure introns don't out of boundary
   seqlevels(grl) <- seqlevels(x)
   seqlengths(grl) <- seqlengths(x)
@@ -116,16 +125,16 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   #########################################################################################################
   # process final outputs
   #########################################################################################################
-  message("============Writing outputs============")  
+  message("Writing outputs...")  
   
   df <- getTx2Gene(grl)
-  write.table(df, file.path(output_dir, paste0(file_name_prefix, "t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
+  write.table(df, file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
   df <- df %>%
     dplyr::mutate(gene_id = stringr::word(gene_id, 1, sep = '-'),
                   status = ifelse(stringr::str_detect(transcript_id, '-'), 'U', 'S'))
   
   writeXStringSet(seqs, file.path(output_dir, paste0(file_name_prefix, ".fa")), format = "fasta")
-  write.table(df, file.path(output_dir, paste0(file_name_prefix, "t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
-
+  write.table(df, file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
+  
   message("Done.")  
-  }
+}
