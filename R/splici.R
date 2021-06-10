@@ -107,7 +107,7 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   
   # make sure introns don't out of boundary
   seqlevels(grl) <- seqlevels(x)
-  seqlengths(grl) <- seqlengths(x)
+  seqlengths(grl) <- suppressWarnings(seqlengths(x)) 
   grl <- trim(grl)
   
   seqs <- GenomicFeatures::extractTranscriptSeqs(
