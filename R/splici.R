@@ -1,4 +1,11 @@
-make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_length = 5, output_dir, dedup_seqs=FALSE) {
+
+make_splici_txome <- function(gtf_path, 
+                              genome_path, 
+                              read_length, 
+                              flank_trim_length = 5, 
+                              output_dir, 
+                              extra_spliced=NULL,
+                              extra_unspliced=NULL) {
   # if you get some error from .get_cds_IDX, please try to rerun the code again
   # read length is the scRNA-seq read length
   # flank trim length is used to avoid marginal case when dealing with junctional reads 
@@ -18,7 +25,7 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   })
   
   if (!dir.exists(output_dir)) {
-    dir.create(file.path(output_dir), showWarnings = FALSE)
+    dir.create(file.path(output_dir),recursive = TRUE, showWarnings = FALSE)
   }  
   # make sure flank_length makes sense
   flank_length = read_length - flank_trim_length
@@ -115,11 +122,10 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
     transcripts = grl
   )
   
-  # If having duplicated sequences, only keep one
-  if(dedup_seqs) {
-    seqs = unique(seqs)
-    grl = grl[names(seqs)]
-  }
+  # For future development purpose
+  # seqs = unique(seqs)
+  # grl = grl[names(seqs)]
+  
   
   # save some space
   rm(x)
@@ -136,6 +142,54 @@ make_splici_txome <- function(gtf_path, genome_path, read_length, flank_trim_len
   
   writeXStringSet(seqs, file.path(output_dir, paste0(file_name_prefix, ".fa")), format = "fasta")
   write.table(df, file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
+
+  # optional: adding extra spliced and unspliced seuqneces from an fasta file
+    if (!is.null(extra_spliced)) {
+    if (!file.exists(extra_spliced)) {
+      warning("provided extra_sequences file does not exist, will ignore it")
+    } else {
+      fa = file(extra_spliced, open="r")
+      lns = readLines(fa)
+      close(fa)
+      for (ln in lns) {
+        if (startsWith(ln, ">")) {
+          # it is a header, write to t2g file and fasta file
+          txp_name = gsub(">", "", ln)
+          write.table(matrix(c(txp_name, txp_name), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, txp_name, "S"), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+        } else {
+          # if not a header, just write to fasta file
+          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+        }
+      }
+    }
+  }
   
+  if (!is.null(extra_unspliced)) {
+    if (!file.exists(extra_unspliced)) {
+      warning("provided extra_sequences file does not exist, will ignore it")
+    } else {
+      fa = file(extra_unspliced, open="r")
+      lns = readLines(fa)
+      close(fa)
+      for (ln in lns) {
+        if (startsWith(ln, ">")) {
+          # it is a header, write to t2g file and fasta file
+          txp_name = gsub(">", "", ln)
+          write.table(matrix(c(txp_name, txp_name), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, txp_name, "U"), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+        } else {
+          # if not a header, just write to fasta file
+          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+        }
+      }
+    }
+  }
+
+  
+
+
   message("Done.")  
 }
