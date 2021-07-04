@@ -1,3 +1,4 @@
+# To use this function, source it to your environment by `source("cellRangerLikeEmptyDrops.R")`
 #' An approximate implementation of the `--soloCellFilter  EmptyDrops_CR` filtering approach to identify empty droplets.
 #'
 #' An approximate implementation of the `--soloCellFilter  EmptyDrops_CR` filtering approach, 
@@ -92,55 +93,54 @@ NULL
                                       seed=2718,
                                       ...
 ) {
-  
-  # This function is an approximate implementation of the 
-  # `--soloCellFilter  EmptyDrops_CR` filtering approach 
-  # of STARsolo (https://www.biorxiv.org/content/10.1101/2021.05.05.442755v1),
-  # which, itself, was reverse engineered from the behavior of 
-  # CellRanger 3+. The original C++ code on which this 
-  # function is based can be found at (https://github.com/alexdobin/STAR/blob/master/source/SoloFeature_cellFiltering.cpp) 
-  
-  ###################################################################################################################    
-  # get the sorted nUMI vector of cells 
-  csums <- colSums2(m)
-  indCount <- as.data.frame(cbind(1:length(csums), csums))
-  colnames(indCount) <- c("index", "count")
-  indCount <- indCount[order(indCount$count,decreasing = TRUE),]
-  
-  # Simple Filtering
-  maxind <- round(nExpectedCells * (1 - maxPercentile))
-  nUMImax <- indCount$count[min(ncol(m), maxind)]
-  nUMImin <- round(nUMImax/maxMinRatio)
-  ncellsSimple <- sum(indCount$count>=nUMImin)
-  
-  # set lower bound
-  minUMI    <- max(umiMin, round(umiMinFracMedian * indCount$count[ncellsSimple/2]))
-  
-  ## we at most assign candMaxN samples in the ambient pool as real cells
-  minUMI <- max(minUMI, indCount$count[min(ncellsSimple+candMaxN,nrow(indCount))])
-  
-  # emptyDrops
-  ## ignore: the lower bound of UMI count, samples with UMI count less than ignore
-  ## will not be considered as ambient cells.
-  ignore_index <- min(ncol(m), indMax)
-  ignore <- indCount$count[ignore_index]
-  
-  ## by.rank: cells with UMI count ranking lower than by.rank will be considered as 
-  ## ambient cells
-  by.rank <- indMin
-  
-  ## retain: samples with UMI count higher than retain will be regarded as cells 
-  retain <- indCount$count[ncellsSimple]
-  
-  ## the cells with total UMI count between ignore and lower will be considered as ambient
-  set.seed(seed)
-  e.out <- emptyDrops(m, by.rank=by.rank, ignore=ignore, retain=retain, alpha=Inf)
-  e.out$is.cell <- e.out$FDR < fdr_thresh
-  e.out$is.cell[is.na(e.out$is.cell)] <- FALSE
-  
-  # further filter cells by minUMI
-  e.out$is.cell[indCount[indCount$count<minUMI, "index"]] <- FALSE
-  e.out
+    # This function is an approximate implementation of the 
+    # `--soloCellFilter  EmptyDrops_CR` filtering approach 
+    # of STARsolo (https://www.biorxiv.org/content/10.1101/2021.05.05.442755v1),
+    # which, itself, was reverse engineered from the behavior of 
+    # CellRanger 3+. The original C++ code on which this 
+    # function is based can be found at (https://github.com/alexdobin/STAR/blob/master/source/SoloFeature_cellFiltering.cpp) 
+
+    ###################################################################################################################    
+    # get the sorted nUMI vector of cells 
+    csums <- colSums2(m)
+    indCount <- as.data.frame(cbind(1:length(csums), csums))
+    colnames(indCount) <- c("index", "count")
+    indCount <- indCount[order(indCount$count,decreasing = TRUE),]
+
+    # Simple Filtering
+    maxind <- round(nExpectedCells * (1 - maxPercentile))
+    nUMImax <- indCount$count[min(ncol(m), maxind)]
+    nUMImin <- round(nUMImax/maxMinRatio)
+    ncellsSimple <- sum(indCount$count>=nUMImin)
+
+    # set lower bound
+    minUMI    <- max(umiMin, round(umiMinFracMedian * indCount$count[ncellsSimple/2]))
+
+    ## we at most assign candMaxN samples in the ambient pool as real cells
+    minUMI <- max(minUMI, indCount$count[min(ncellsSimple+candMaxN,nrow(indCount))])
+
+    # emptyDrops
+    ## ignore: the lower bound of UMI count, samples with UMI count less than ignore
+    ## will not be considered as ambient cells.
+    ignore_index <- min(ncol(m), indMax)
+    ignore <- indCount$count[ignore_index]
+
+    ## by.rank: cells with UMI count ranking lower than by.rank will be considered as 
+    ## ambient cells
+    by.rank <- indMin
+
+    ## retain: samples with UMI count higher than retain will be regarded as cells 
+    retain <- indCount$count[ncellsSimple]
+
+    ## the cells with total UMI count between ignore and lower will be considered as ambient
+    set.seed(seed)
+    e.out <- DropletUtils::emptyDrops(m, by.rank=by.rank, ignore=ignore, retain=retain, alpha=Inf)
+    e.out$is.cell <- e.out$FDR < fdr_thresh
+    e.out$is.cell[is.na(e.out$is.cell)] <- FALSE
+
+    # further filter cells by minUMI
+    e.out$is.cell[indCount[indCount$count<minUMI, "index"]] <- FALSE
+    e.out
 }
 
 #' @export
