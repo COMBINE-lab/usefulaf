@@ -5,7 +5,8 @@ make_splici_txome <- function(gtf_path,
                               flank_trim_length = 5, 
                               output_dir, 
                               extra_spliced=NULL,
-                              extra_unspliced=NULL) {
+                              extra_unspliced=NULL,
+                              dedup_seqs=FALSE) {
   # if you get some error from .get_cds_IDX, please try to rerun the code again
   # read length is the scRNA-seq read length
   # flank trim length is used to avoid marginal case when dealing with junctional reads 
@@ -122,9 +123,11 @@ make_splici_txome <- function(gtf_path,
     transcripts = grl
   )
   
-  # For future development purpose
-  # seqs = unique(seqs)
-  # grl = grl[names(seqs)]
+  # If having duplicated sequences, only keep one
+  if(dedup_seqs) {
+    seqs = unique(seqs)
+    grl = grl[names(seqs)]
+  }
   
   
   # save some space
