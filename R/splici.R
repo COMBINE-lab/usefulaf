@@ -177,7 +177,7 @@ make_splici_txome <- function(gtf_path,
         if (startsWith(ln, ">")) {
           # it is a header, write to t2g file and fasta file
           txp_name = gsub(">", "", ln)
-          write.table(matrix(c(txp_name, txp_name), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, paste0(txp_name, "-U")), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
           write.table(matrix(c(txp_name, txp_name, "U"), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
           write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
         } else {
