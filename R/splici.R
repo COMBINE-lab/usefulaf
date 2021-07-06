@@ -38,11 +38,17 @@ make_splici_txome <- function(gtf_path,
     stop("The following file does not exist: \n", gtf_path)
   }
 
-  # make sure fasta file exist
+  # make sure fasta file exists
   if (!file.exists(genome_path)) {
     stop("The following file does not exist: \n", genome_path)
   }
+
+  # output file names
   file_name_prefix = paste0("transcriptome_splici_fl", flank_length)
+  out_fa <- file.path(output_dir, paste0(file_name_prefix, ".fa"))
+  out_t2g <- file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv"))
+  out_t2g3col <- file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv"))
+
 
 
   #########################################################################################################
@@ -134,15 +140,15 @@ make_splici_txome <- function(gtf_path,
   message("Writing outputs...")
 
   df <- getTx2Gene(grl)
-  write.table(df, file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
+  write.table(df, out_t2g, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
   df <- df %>%
     dplyr::mutate(gene_id = word(gene_id, 1, sep = '-'),
                   status = ifelse(str_detect(transcript_id, '-'), 'U', 'S'))
 
-  writeXStringSet(seqs, file.path(output_dir, paste0(file_name_prefix, ".fa")), format = "fasta")
+  writeXStringSet(seqs, out_fa, format = "fasta")
   write.table(df, file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE)
 
-  # optional: adding extra spliced and unspliced seuqneces from an fasta file
+  # optional: adding extra spliced and unspliced sequences from an fasta file
     if (!is.null(extra_spliced)) {
     if (!file.exists(extra_spliced)) {
       warning("provided extra_sequences file does not exist, will ignore it")
@@ -152,14 +158,14 @@ make_splici_txome <- function(gtf_path,
       close(fa)
       for (ln in lns) {
         if (startsWith(ln, ">")) {
-          # it is a header, write to t2g file and fasta file
+          # it is a header, write to t2g files and fasta file
           txp_name = gsub(">", "", ln)
-          write.table(matrix(c(txp_name, txp_name), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
-          write.table(matrix(c(txp_name, txp_name, "S"), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
-          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, txp_name), nrow = 1), file = out_t2g, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, txp_name, "S"), nrow = 1), file = out_t2g3col, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(ln, file = out_fa, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
         } else {
           # if not a header, just write to fasta file
-          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(ln, file = out_fa, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
         }
       }
     }
@@ -176,12 +182,12 @@ make_splici_txome <- function(gtf_path,
         if (startsWith(ln, ">")) {
           # it is a header, write to t2g file and fasta file
           txp_name = gsub(">", "", ln)
-          write.table(matrix(c(txp_name, paste0(txp_name, "-U")), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
-          write.table(matrix(c(txp_name, txp_name, "U"), nrow = 1), file = file.path(output_dir, paste0(file_name_prefix, "_t2g_3col.tsv")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
-          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, paste0(txp_name, "-U")), nrow = 1), file = out_t2g, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(matrix(c(txp_name, txp_name, "U"), nrow = 1), file = out_t2g3col, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(ln, file = out_fa, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
         } else {
           # if not a header, just write to fasta file
-          write.table(ln, file = file.path(output_dir, paste0(file_name_prefix, ".fa")), sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
+          write.table(ln, file = out_fa, sep = "\t", row.names = FALSE, quote = FALSE, col.names = FALSE, append = TRUE)
         }
       }
     }
