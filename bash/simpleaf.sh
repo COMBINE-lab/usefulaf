@@ -113,28 +113,28 @@ read2=`echo $read2 | tr ',' ' '`
 
 ## map
 cmd="$time $logdir/map.time $salmon alevin -l ISR -i $index -1 $read1 -2 $read2 -p $threads $chemflag -o $output/alevin_map --sketch"
-echo "mapping:"
+echo -e "\nmapping:"
 echo "command: $cmd"
 echo "============="
 eval $cmd
 
 ### generate permit list
 cmd="$time $logdir/gpl.time $fry generate-permit-list $permitmode -d fw -i $output/alevin_map -o $output/gpl/ |& stdbuf -oL tr '\r' '\n' > $logdir/gpl.log"
-echo "gpl:"
+echo -e "\n\ngpl:"
 echo "command: "$cmd
 echo "============="
 eval $cmd
 
 ### collate
 cmd="$time $logdir/collate.time $fry collate -i $output/gpl/ -r $output/alevin_map -t $threads |& stdbuf -oL tr '\r' '\n' > $logdir/collate.log"
-echo "collate:"
+echo -e "\n\ncollate:"
 echo "command: "$cmd
 echo "============="
 eval $cmd
 
 ### quant
 cmd="$time $logdir/quant.time $fry quant -r $res --use-mtx -m $t2g -i $output/gpl/ -o $output/quant -t $threads |& stdbuf -oL tr '\r' '\n' > $logdir/quant.log"
-echo "quant:"
+echo -e "\n\nquant:"
 echo "command: "$cmd
 echo "============="
 eval $cmd
