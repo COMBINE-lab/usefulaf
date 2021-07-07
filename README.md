@@ -4,7 +4,7 @@
 
 This respoistory contains scripts, functions and utilities that are useful for preparing data for processing with alevin-fry, as well as for reading alevin-fry data into other packages for downstream analysis.
 
-The different utilities are broken down in this repository by the language in which they are written (right now, just Python and R).  A brief listing of 
+The different utilities are broken down in this repository by the language in which they are written (right now, Python, R and bash).  A brief listing of 
 the available utilities currently in the repository is:
 
 ### R language 
@@ -17,3 +17,8 @@ the available utilities currently in the repository is:
 ### Python language
 
 * `load_fry.py` — Contains a Python function `load_fry` which is intended to load `alevin-fry` output (including from USA mode quantification) into a [`Scanpy`](https://github.com/theislab/scanpy) object.
+
+### Bash
+
+* `get_10x_permit_lists.sh` — Provides a script to download the 10x chromium v2 or v3 permit lists.
+* `simpleaf.sh` — Provides a script to run the entire `salmon -> alevin-fry (generate-permit-list > collate > quant)` pipeline, though providing only a simplified set of options.
