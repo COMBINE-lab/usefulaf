@@ -100,6 +100,8 @@ function check_min_version() {
 if [ -z $ALEVIN_FRY_HOME ]; then
   echo "To use $0, you must set a valid ALEVIN_FRY_HOME environment variable"
   exit 1
+else
+  ALEVIN_FRY_HOME=$(realpath ${ALEVIN_FRY_HOME})
 fi
 
 if [ -d "$ALEVIN_FRY_HOME" ]; then
@@ -162,7 +164,7 @@ function simpleaf_index() {
   fi
 
   # make the directory where we will put the reference
-  output=`realpath $output`
+  output=$(realpath ${output})
   outref="$output/ref/"
   mkdir -p $outref
 
