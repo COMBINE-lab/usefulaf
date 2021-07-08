@@ -23,7 +23,9 @@ the available utilities currently in the repository is:
 * `get_10x_permit_lists.sh` — Provides a script to download the 10x chromium v2 or v3 permit lists.
 * `simpleaf` — Provides a script to run the entire `salmon -> alevin-fry (generate-permit-list > collate > quant)` pipeline, though providing only a simplified set of options.
 
-### Using simpleaf
+-----------------
+
+## Using simpleaf
 
   The `simpleaf` script that resides in the `bash` subdirectory is intended to simply the running of `alevin-fry` in common usage scenarios.  By limiting some of the different options that can be set, it provides a streamlined way to build the splici reference and index in a single command, as well as to process an experiment from raw FASTQ files to a count matrix in a single command.
   
