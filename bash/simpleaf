@@ -96,6 +96,11 @@ function check_min_version() {
   fi
 }
 
+###
+# end of helper functions, entry point of 
+# script.
+###
+
 # make sure that an alevin-fry home is set
 if [ -z $ALEVIN_FRY_HOME ]; then
   echo "To use $0, you must set a valid ALEVIN_FRY_HOME environment variable"
@@ -119,7 +124,24 @@ check_min_version $salmon "1.5.1"
 fry="${FRY_BIN:-alevin-fry}"
 check_min_version $fry "0.4.0"
 
-time="/usr/bin/time -v -o"
+time=${TIME_BIN:-"/usr/bin/time"}
+# time writes version to stderr ... sigh
+time_vstr=$($time -V 2>&1); ec=$?
+if [[ "$ec" -ne 0 ]]; then 
+  echo "$time -V returned non-zero exit code, please set TIME_BIN to point to a GNU time executable"
+  exit 1
+else
+  tstr=$(echo $time_vstr | cut -d' ' -f1,2)
+  if [[ "$tstr" != "GNU time" ]]; then 
+	  echo "$time does not appear to be GNU time ($time -V did not return a string starting with GNU time)"
+	  exit 1;
+  fi
+fi
+
+# now that we know we have a proper GNU time executable
+# redefine it to have the desired options attached
+time="$time -v -o"
+
 threads=16
 
 if [ -x "$(command -v nproc)" ]; then
