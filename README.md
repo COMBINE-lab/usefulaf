@@ -22,4 +22,52 @@ the available utilities currently in the repository is:
 
 * `get_10x_permit_lists.sh` — Provides a script to download the 10x chromium v2 or v3 permit lists.
 * `simpleaf` — Provides a script to run the entire `salmon -> alevin-fry (generate-permit-list > collate > quant)` pipeline, though providing only a simplified set of options.
-  * Notes about `simpleaf`. `simpleaf` requires you to set a `ALEVIN_FRY_HOME` variable in your path.  This directory will be used for persistent configuration and small file (<1G) storage between runs.  If you provide a directory and it doesn't exist, it will be created.  There are 2 sub-commands, `index` and `quant`.  The `index` command will take a reference genome FASTA and GTF as input, build a splici reference using the `build_splici_ref.R` script, and then build a sparse `salmon` index on the resulting reference.  The `quant` command takes as input the index, reads, and relevant information about the experiment (e.g. chemistry), and runs all of the steps of the `alevin-fry` pipeline, from mapping with `salmon` through `quant` with `alevin-fry`.  The `index` command requires the `Rscript` executable to be in the path, as well as all of theR packages that are required by `build_splici_ref.R`.  The `quant` command requires that the `salmon` and `alevin-fry` execuitables be in the path OR that the variables `SALMON_BIN` and `FRY_BIN` exist in the environment.  The `simpleaf` script will check the versions of `salmon` and `alevin-fry`, but recent versions of both are required (`salmon` v >= 1.5.1, `alevin-fry` v >= 0.4.0). 
+
+### Using simpleaf
+
+  The `simpleaf` script that resides in the `bash` subdirectory is intended to simply the running of `alevin-fry` in common usage scenarios.  By limiting some of the different options that can be set, it provides a streamlined way to build the splici reference and index in a single command, as well as to process an experiment from raw FASTQ files to a count matrix in a single command.
+  
+  To work properly, `simpleaf` has a few requirements.  First, it should be run from *within* the `bash` subdirectory of this repository.  This is because it currently makes assumptions about the relative paths of the scripts `get_10x_permit_lists.sh` and `build_splici_ref.R`.  Additionally, the following environment variables are used within `simpleaf`:
+  
+   * `ALEVIN_FRY_HOME` **REQUIRED** — This directory will be used for persistent configuration and small file (<1G) storage between runs.  If you provide a directory and it doesn't exist, it will be created.  It is easiest to just set this in your enviornment globally so that the same home can be used over many runs without you having to provide the variable explicitly each time.  A good choice for this variable might be something like `~/.alevin_fry_home`.
+   
+   * `SALMON_BIN` **OPTIONAL** — This should provide the path to a `salmon` executable of version >= 1.5.1.  If not provided, the script will assume it can simply invoke `salmon` in the current enviornment.
+   
+   * `FRY_BIN` **OPTIONAL** — This should provide the path to a `alevin-fry` executable of version >= 0.4.0.  If not provided, the script will assume it can simply invoke `alevin-fry` in the current enviornment.
+   
+   * `TIME_BIN` **OPTIONAL** — This should provide the path to a [GNU time](https://www.gnu.org/software/time/) executable; this is different from the shell `time` command, and on most linux systems exists at `/usr/bin/time`.  If this variable is not provided, the script will assume it can use `/usr/bin/time`.  On OSX systems, you should install GNU time explicitly.  This can be done with [conda](https://anaconda.org/conda-forge/time) or homebrew.
+  
+  The `simpleaf` script has two sub-commands:
+  
+  * `index` — The `index` command will take a reference genome FASTA and GTF as input, build a splici reference using the `build_splici_ref.R` script, and then build a sparse `salmon` index on the resulting reference. **Note**: The `index` command requires the `Rscript` executable to be in the path, as well as all of theR packages that are required by `build_splici_ref.R`. The relevant options (which you can obtain by running `./simpleaf index -h`) are:
+  
+  ```{bash}
+  Usage: ./simpleaf index [options]
+        options:
+         -f, --fasta REQUIRED genome reference FASTA file
+         -g, --gtf REQUIRED GTF file with gene annotations
+         -l, --rlen REQUIRED the target read length the index will be built for
+         -o, --output REQUIRED path to output directory (will be created if it doesn't exist)
+         -s, --spliced OPTIONAL path to FASTA file with extra spliced sequence to add to the index
+         -u, --unspliced OPTIONAL path to FASTA file with extra unspliced sequence to add to the index
+         -d, --dedup FLAG OPTIONAL deduplicate identical sequences inside the R script when building the splici reference
+         -t, --threads OPTIONAL number of threads to use when running [default: min(16, num cores)]
+         -h, --help display this help message
+  ```
+  
+   * `quant` — The `quant` command takes as input the index, reads, and relevant information about the experiment (e.g. chemistry), and runs all of the steps of the `alevin-fry` pipeline, from mapping with `salmon` through `quant` with `alevin-fry`. The relevant options (which you can obtain by running `./simpleaf quant -h`) are:
+  
+  ```{bash}
+  Usage: ./simpleaf quant [options]
+        options:
+         -1, --r1 REQUIRED comma separated list of left reads
+         -2, --r2 REQUIRED comma separated list of right reads
+         -i, --index REQUIRED path to a (sparse or dense) salmon splici index
+         -o, --output REQUIRED path to output directory (will be created if it doesn't exist)
+         -f, --fmode REQUIRED permit list filter mode, one of {knee, k, unfilt, u}
+         -c, --chem REQUIRED chemistry of experiment, one of {v2, v3}
+         -r, --res REQUIRED resolution strategy for alevin-fry, one of {cr-like, cr-like-em}
+         -m, --t2g REQUIRED three-column txp-to-gene file to pass to alevin-fry quant command
+         -t, --threads OPTIONAL number of threads to use when running [default: min(16, num cores)]
+         -h, --help display this help message
+  ```
