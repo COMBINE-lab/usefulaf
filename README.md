@@ -1,4 +1,4 @@
-# Useful utilities to assist in processing and analyzing data with alevin-fry
+# Useful utilities for single-cell processing with alevin-fry
 
 [Alevin-fry](https://github.com/COMBINE-lab/alevin-fry) is a fast, accurate and memory-frugal tool for preprocessing single-cell and single-nucleus RNA-seq data.  You can read more about alevin-fry in [its pre-print](https://www.biorxiv.org/content/10.1101/2021.06.29.450377v1).
 
