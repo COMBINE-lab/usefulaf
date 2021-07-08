@@ -1,0 +1,340 @@
+#!/bin/bash
+
+function display_quant_usage() { 
+  echo "This script runs alevin-fry to quantify a single-cell RNA-seq experiment"
+  echo -e "\nUsage: $0 quant [options]" 
+  echo -e "\toptions:" 
+  echo -e "\t -1, --r1 REQUIRED comma separated list of left reads"
+  echo -e "\t -2, --r2 REQUIRED comma separated list of right reads"
+  echo -e "\t -i, --index REQUIRED path to a (sparse or dense) salmon splici index"
+  echo -e "\t -o, --output REQUIRED path to output directory (will be created if it doesn't exist)"
+  echo -e "\t -f, --fmode REQUIRED permit list filter mode, one of {knee, k, unfilt, u}"
+  echo -e "\t -c, --chem REQUIRED chemistry of experiment, one of {v2, v3}"
+  echo -e "\t -r, --res REQUIRED resolution strategy for alevin-fry, one of {cr-like, cr-like-em}"
+  echo -e "\t -m, --t2g REQUIRED three-column txp-to-gene file to pass to alevin-fry quant command"
+  echo -e "\t -t, --threads OPTIONAL number of threads to use when running [default: min(16, num cores)]"
+  echo -e "\t -h, --help display this help message"
+} 
+
+function display_index_usage() { 
+  echo "This script generates a splici reference and indexes it"
+  echo -e "\nUsage: $0 index [options]" 
+  echo -e "\toptions:" 
+  echo -e "\t -f, --fasta REQUIRED genome reference FASTA file"
+  echo -e "\t -g, --gtf REQUIRED GTF file with gene annotations"
+  echo -e "\t -l, --rlen REQUIRED the target read length the index will be built for"
+  echo -e "\t -o, --output REQUIRED path to output directory (will be created if it doesn't exist)"
+  echo -e "\t -s, --spliced OPTIONAL path to FASTA file with extra spliced sequence to add to the index"
+  echo -e "\t -u, --unspliced OPTIONAL path to FASTA file with extra unspliced sequence to add to the index"
+  echo -e "\t -d, --dedup FLAG OPTIONAL deduplicate identical sequences inside the R script when building the splici reference"
+  echo -e "\t -t, --threads OPTIONAL number of threads to use when running [default: min(16, num cores)]"
+  echo -e "\t -h, --help display this help message"
+} 
+
+function display_usage() { 
+  echo "This script wraps alevin-fry to index a reference or quantify a single-cell RNA-seq experiment"
+  echo -e "\nUsage: $0 index [index_options]" 
+  echo -e "Usage: $0 quant [quant_options]" 
+  echo -e "Usage: $0 -h | --help" 
+  echo -e "use $0 index -h or $0 quant -h to get more help for those sub-commands"
+} 
+
+# compare versions.
+# from: https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
+function vercomp () {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+function check_min_version() {
+  prog_name=$1
+  min_ver=$2
+  prog_vstr=`$prog_name --version`; ec=$?
+  case $ec in
+    0) echo "$prog_vstr";;
+    *) echo "ERROR: $prog_name -v exited with non-zero exit code"; exit 1;;
+  esac
+  
+  # check that the version is new enough
+  prog_ver=`echo $prog_vstr | cut -d' ' -f2`
+  
+  vercomp $prog_ver $min_ver "="; ec1=$?
+  vercomp $prog_ver $min_ver ">"; ec2=$?
+  
+  if [[ $ec1 -eq 0 || $ec2 -eq 0 ]]; then
+    echo "$prog_name version $prog_ver is sufficiently new."
+    return 0
+  else
+    echo "ERROR: $prog_name version was $prog_ver, require at least $min_ver."
+    exit 1
+  fi
+}
+
+# make sure that an alevin-fry home is set
+if [ -z $ALEVIN_FRY_HOME ]; then
+  echo "To use $0, you must set a valid ALEVIN_FRY_HOME environment variable"
+  exit 1
+fi
+
+if [ -d "$ALEVIN_FRY_HOME" ]; then
+    echo "ALEVIN_FRY_HOME=$ALEVIN_FRY_HOME" 
+else
+    echo "ALEVIN_FRY_HOME did not exist; creating it."
+    mkdir -p $ALEVIN_FRY_HOME
+fi
+
+# check that the salmon executable runs and is of at least the required version
+salmon="${SALMON_BIN:-salmon}"
+check_min_version $salmon "1.5.1"
+
+# check that the fry executable runs and is of at least the required version
+fry="${FRY_BIN:-alevin-fry}"
+check_min_version $fry "0.4.0"
+
+time="/usr/bin/time -v -o"
+threads=16
+
+if [ -x "$(command -v nproc)" ]; then
+  np=`nproc`
+elif [ -x "$(command -v sysctl)"]; then
+  np=`sysctl -n hw.ncpu`
+else
+  np=16
+fi
+
+if [ "$threads" -gt "$np" ]; then
+  threads="$np"
+fi
+
+function simpleaf_index() {
+  while [[ "$#" -gt 0 ]]; do 
+    case $1 in 
+      -f|--fasta) genome="$2"; shift ;;
+      -g|--gtf) gtf="$2"; shift ;;
+      -l|--rlen) rlen="$2"; shift ;;
+      -o|--output) output="$2"; shift ;;
+      -t|--threads) threads="$2"; shift ;;
+      -s|--spliced) extra_spliced="$2"; shift ;;
+      -u|--unspliced) extra_unspliced="$2"; shift ;;
+      -d|--dedup) dedup=1; shift ;;
+      -h|--help) help=1; shift ;;
+      *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac 
+    shift 
+  done 
+  set -o errexit -o pipefail
+
+  if [[ -n "$help" ]]; then
+    display_index_usage
+    exit 0
+  fi
+
+
+  if [[ -z "$genome" || -z "$gtf" || -z "$rlen" || -z "$output" ]]; then
+    display_index_usage
+    exit 1
+  fi
+
+  # make the directory where we will put the reference
+  output=`realpath $output`
+  outref="$output/ref/"
+  mkdir -p $outref
+
+  cwd=$(pwd)
+  cd "../R"
+
+  if [[ -z "$extra_spliced" ]]; then 
+    extra_spliced_flag=""
+  else
+    extra_spliced_flag="--extra-spliced $extra_spliced"
+  fi
+
+  if [[ -z "$extra_unspliced" ]]; then 
+    extra_unspliced_flag=""
+  else
+    extra_unspliced_flag="--extra-unspliced $extra_unspliced"
+  fi
+
+  if [[ -z "$dedup" ]]; then
+    dedup_flag=""
+  else
+    dedup_flag="--dedup-seqs"
+  fi
+  # $ ./build_splici_ref.R <path_to_genome_fasta> <path_to_gtf> <target_read_length> <output_dir>
+  cmd="./build_splici_ref.R $genome $gtf $rlen $outref $extra_spliced_flag $extra_unspliced_flag $dedup_flag"
+  echo -e "\nExtracting the splici reference using command \n\n $cmd \n"
+  #eval $cmd 
+
+  echo -e "\nDone. Building index."
+  cd $cwd
+
+  outidx="$output/index" 
+  fl=$(( $rlen - 5 ))
+
+  cmd="$salmon index -t $outref/transcriptome_splici_fl$fl.fa -i $outidx -p $threads --sparse"
+  echo -e "\nbuilding index:"
+  echo "command: $cmd"
+  echo "============="
+  eval $cmd 
+
+  cp $outref/transcriptome_splici_fl${fl}_t2g_3col.tsv $outidx/t2g_3col.tsv
+  echo -e "\nDone. Wrote index to $outidx"
+}
+
+function simpleaf_quant() {
+  while [[ "$#" -gt 0 ]]; do 
+    case $1 in 
+      -1|--r1) read1="$2"; shift ;;
+      -2|--r2) read2="$2"; shift ;;
+      -i|--index) index="$2"; shift ;;
+      -t|--threads) threads="$2"; shift ;;
+      -o|--output) output="$2"; shift ;;
+      -f|--fmode) fmode="$2"; shift ;;
+      -r|--res) res="$2"; shift ;;
+      -c|--chem) chem="$2"; shift ;;
+      -m|--t2g) t2g="$2"; shift ;;
+      -h|--help) help=1; shift ;;
+      *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac 
+    shift 
+  done
+
+  set -o errexit -o pipefail
+
+  if [[ -n "$help" ]]; then
+    display_quant_usage
+    exit 0
+  fi
+
+
+  if [[ -z "$read1" || -z "$read2" || -z "$index" || -z "$threads" || -z "$output" || -z "$fmode" || -z "$res" || -z "$chem" || -z "$t2g" ]]; then
+    display_quant_usage
+    exit 1
+  fi
+
+  ## Check that the fitler mode is one of knee,k,unfilt,u
+  if [[ "$fmode" == "k" || "$fmode" == "knee" || "$fmode" == "unfilt" || "$fmode" == "u" ]]; then
+    echo "filter mode is : $fmode"
+  else
+    echo "filter mode must be one of {knee, k, unfilt, u}"
+    exit 1
+  fi
+
+  ## Check that the chemistry is either v2 or v3
+  if [[ "$chem" == "v2" || "$chem" == "v3" ]]; then
+    echo "chemistry is : 10x chromimum $chem"
+  else
+    echo "chemistry mode must be one of {v2, v3}"
+    exit 1
+  fi
+
+  ## If the chemistry is v2, set the chemflag and the fitler flags
+  if [[ $chem == "v2" ]]; then
+    if [[ "$fmode" == "unfilt" || "$fmode" == "u" ]]; then
+      v2file=$ALEVIN_FRY_HOME/plist/10x_v2_permit.txt
+      if [ ! -f "$v2file" ]; then
+            echo "10x v2 permit list does not exist, downloading now"
+            bash get_10x_permit_lists.sh -o $ALEVIN_FRY_HOME/plist -l v2 
+      fi
+      permitmode="-u $ALEVIN_FRY_HOME/plist/10x_v2_permit.txt"
+    else
+      permitmode="-k"
+    fi
+    chemflag="--chromium"
+  fi
+
+  ## If the chemistry is v3, set the chemflag and the fitler flags
+  if [[ $chem == "v3" ]]; then
+    if [[ "$fmode" == "unfilt" || "$fmode" == "u" ]]; then
+      v3file=$ALEVIN_FRY_HOME/plist/10x_v3_permit.txt
+      if [ ! -f "$v3file" ]; then
+            echo "10x v3 permit list does not exist, downloading now"
+            bash get_10x_permit_lists.sh -o $ALEVIN_FRY_HOME/plist -l v3 
+      fi
+      permitmode="-u $ALEVIN_FRY_HOME/plist/10x_v3_permit.txt"
+    else
+      permitmode="-k"
+    fi
+    chemflag="--chromiumV3"
+  fi
+
+  mkdir -p $output/logdir
+  logdir="$output/logdir"
+
+  ## turn comma separated list into space separated list
+  read1=`echo $read1 | tr ',' ' '`
+  read2=`echo $read2 | tr ',' ' '`
+
+  ## map
+  cmd="$time $logdir/map.time $salmon alevin -l ISR -i $index -1 $read1 -2 $read2 -p $threads $chemflag -o $output/alevin_map --sketch"
+  echo "mapping:"
+  echo "command: $cmd"
+  echo "============="
+  eval $cmd
+
+  ### generate permit list
+  cmd="$time $logdir/gpl.time $fry generate-permit-list $permitmode -d fw -i $output/alevin_map -o $output/gpl/ |& stdbuf -oL tr '\r' '\n' > $logdir/gpl.log"
+  echo "gpl:"
+  echo "command: "$cmd
+  echo "============="
+  eval $cmd
+
+  ### collate
+  cmd="$time $logdir/collate.time $fry collate -i $output/gpl/ -r $output/alevin_map -t $threads |& stdbuf -oL tr '\r' '\n' > $logdir/collate.log"
+  echo "collate:"
+  echo "command: "$cmd
+  echo "============="
+  eval $cmd
+
+  ### quant
+  cmd="$time $logdir/quant.time $fry quant -r $res --use-mtx -m $t2g -i $output/gpl/ -o $output/quant -t $threads |& stdbuf -oL tr '\r' '\n' > $logdir/quant.log"
+  echo "quant:"
+  echo "command: "$cmd
+  echo "============="
+  eval $cmd
+
+  echo "Finished! Quantification results are at $output/quant"
+}
+
+if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+  display_usage
+  exit 0
+fi
+
+if [[ "$1" == "quant" ]]; then
+  shift;
+  simpleaf_quant "$@"
+elif [[ "$1" == "index" ]]; then
+  shift;
+  simpleaf_index "$@"
+else
+  echo -e "\nERROR must pass a valid sub-command, index or quant"
+  display_usage
+  exit 1
+fi
