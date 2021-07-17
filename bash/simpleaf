@@ -131,7 +131,7 @@ if [[ "$ec" -ne 0 ]]; then
   echo "$time -V returned non-zero exit code, please set TIME_BIN to point to a GNU time executable"
   exit 1
 else
-  if grep -q $tstr; then 
+  if (echo $time_vstr | grep -iq "GNU Time"); then 
 	  echo "$time does not appear to be GNU time ($time -V did not return a string starting with GNU time)"
 	  exit 1;
   fi
@@ -212,7 +212,7 @@ function simpleaf_index() {
   # $ ./build_splici_ref.R <path_to_genome_fasta> <path_to_gtf> <target_read_length> <output_dir>
   cmd="./build_splici_ref.R $genome $gtf $rlen $outref $extra_spliced_flag $extra_unspliced_flag $dedup_flag"
   echo -e "\nExtracting the splici reference using command \n\n $cmd \n"
-  #eval $cmd 
+  eval $cmd 
 
   echo -e "\nDone. Building index."
   cd $cwd
