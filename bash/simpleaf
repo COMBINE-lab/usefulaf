@@ -131,8 +131,7 @@ if [[ "$ec" -ne 0 ]]; then
   echo "$time -V returned non-zero exit code, please set TIME_BIN to point to a GNU time executable"
   exit 1
 else
-  tstr=$(echo $time_vstr | cut -d' ' -f1,2)
-  if [[ "$tstr" != "GNU time" ]]; then 
+  if grep -q $tstr; then 
 	  echo "$time does not appear to be GNU time ($time -V did not return a string starting with GNU time)"
 	  exit 1;
   fi
