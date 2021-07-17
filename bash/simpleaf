@@ -132,7 +132,9 @@ if [[ "$ec" -ne 0 ]]; then
   exit 1
 else
   if (echo $time_vstr | grep -iq "GNU Time"); then 
-	  echo "$time does not appear to be GNU time ($time -V did not return a string starting with GNU time)"
+	  echo "$time command appears to execute a valid GNU time" 
+  else 
+    echo "$time does not appear to be GNU time ($time -V did not return a string starting with GNU time)"
 	  exit 1;
   fi
 fi
