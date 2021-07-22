@@ -3,7 +3,13 @@ import scanpy
 def load_fry(frydir, which_counts=['S','A'], verbose=False):
     import json
     import os
-    meta_info = json.load(open(os.path.sep.join([frydir, "meta_info.json"])))
+    import pandas as pd
+    
+    fpath = os.path.sep.join([frydir, "quant.json"])
+    if !os.path.exists(fpath):
+        fpath = os.path.sep.join([frydir, "meta_info.json"])
+
+    meta_info = json.load(open(fpath))
     ng = meta_info['num_genes']
     usa_mode = meta_info['usa_mode']
 

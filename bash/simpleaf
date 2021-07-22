@@ -84,10 +84,9 @@ function check_min_version() {
   # check that the version is new enough
   prog_ver=`echo $prog_vstr | cut -d' ' -f2`
   
-  vercomp $prog_ver $min_ver "="; ec1=$?
-  vercomp $prog_ver $min_ver ">"; ec2=$?
-  
-  if [[ $ec1 -eq 0 || $ec2 -eq 0 ]]; then
+  vercomp $prog_ver $min_ver; ec1=$?
+ 
+  if [[ $ec1 -eq 0 || $ec1 -eq 1 ]]; then
     echo "$prog_name version $prog_ver is sufficiently new."
     return 0
   else
