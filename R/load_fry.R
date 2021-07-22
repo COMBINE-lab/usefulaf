@@ -7,7 +7,12 @@ load_fry <- function(frydir, which_counts = c('S', 'A'), verbose = FALSE) {
   })
   
   # read in metadata
-  meta_info <- fromJSON(file = file.path(frydir, "meta_info.json"))
+  qfile <- file.path(frydir, "quant.json")
+  if (!file.exists(qfile)) {
+    qfile <- file.path(frydir, "meta_info.json")
+  }
+
+  meta_info <- fromJSON(file = qfile)
   ng <- meta_info$num_genes
   usa_mode <- meta_info$usa_mode
   
