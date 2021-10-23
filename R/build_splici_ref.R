@@ -7,7 +7,7 @@
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-# Install eisaR
+# Install depedencies
 BiocManager::install(c("eisaR","BSgenome"))
 
 # install argparser
