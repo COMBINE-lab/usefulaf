@@ -10,11 +10,9 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 # Install eisaR
 BiocManager::install(c("eisaR","BSgenome"))
 
-
 # install argparser
 if (!requireNamespace("argparser", quietly = TRUE))
     install.packages("argparser")
-
 
 # install roe from github
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -23,11 +21,11 @@ if (!requireNamespace("devtools", quietly = TRUE))
 if (!requireNamespace("roe", quietly = TRUE))
     devtools::install_github("COMBINE-lab/roe")
 
+# load packages
 suppressPackageStartupMessages({
 library(argparser)
 library(roe)
 })
-
 
 # Create a parser
 p <- arg_parser("Build a splici reference from a genome and GTF file.")
@@ -65,11 +63,11 @@ if (is.na(argv$extra_unspliced)) {
 	argv$extra_unspliced <- NULL
 }
 
-make_splici_txome(argv$gtf, 
-                  argv$genome, 
-                  argv$read_length, 
-                  argv$flank_trim_length, 
-                  argv$splici_dir, 
-                  argv$extra_spliced,
-                  argv$extra_unspliced,
-		  argv$dedup_seqs) 
+make_splici_txome(gtf_path=argv$gtf,
+		  genome_path=argv$genome,
+		  read_length=argv$read_length,
+		  flank_trim_length=argv$flank_trim_length,
+		  output_dir=argv$splici_dir,
+		  extra_spliced = argv$extra_spliced,
+		  extra_unspliced = argv$extra_unspliced,
+		  dedup_seqs = argv$dedup_seqs)
