@@ -3,21 +3,27 @@
 # usage :
 # $ ./build_splici_ref.R <path_to_genome_fasta> <path_to_gtf> <target_read_length> <output_dir>
 
-# make sure the dependencies are installed
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+# install BioC depedencies if necessary
+if ( (!requireNamespace("eisaR", quietly = TRUE)) || 
+     (!requireNamespace("BSgenome", quietly = TRUE)) ) {
 
-# Install depedencies
-BiocManager::install(c("eisaR","BSgenome"))
+  # install BioC itself, if we don't have it
+  if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+  }
+
+  BiocManager::install(c("eisaR","BSgenome"))
+}
 
 # install argparser
 if (!requireNamespace("argparser", quietly = TRUE))
     install.packages("argparser")
 
-# install roe from github
+# install devtools 
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 
+# install roe from github
 if (!requireNamespace("roe", quietly = TRUE))
     devtools::install_github("COMBINE-lab/roe")
 
