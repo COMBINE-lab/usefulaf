@@ -16,14 +16,14 @@ RUN touch /root/.bashrc \
        && echo "export ALEVIN_FRY_HOME=/workdir/.afhome" >> /root/.bashrc \
        && echo "export TIME_BIN=/opt/conda/bin/time" >> /root/.bashrc
 
-RUN git clone https://github.com/COMBINE-lab/usefulaf.git
-
 RUN touch /root/.Rprofile 
 
 RUN echo 'local({r <- getOption("repos") \n\
       r["CRAN"] <- "http://cran.r-project.org" \n\
       options(repos=r) \n\
       })' >> /root/.Rprofile
+
+RUN git clone https://github.com/COMBINE-lab/usefulaf.git
 
 ENV ALEVIN_FRY_HOME=/workdir/.afhome
 ENV TIME_BIN=/opt/conda/bin/time
