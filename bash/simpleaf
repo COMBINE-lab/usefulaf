@@ -27,6 +27,7 @@ function display_index_usage() {
   echo -e "\t -s, --spliced OPTIONAL path to FASTA file with extra spliced sequence to add to the index"
   echo -e "\t -u, --unspliced OPTIONAL path to FASTA file with extra unspliced sequence to add to the index"
   echo -e "\t -d, --dedup FLAG OPTIONAL deduplicate identical sequences inside the R script when building the splici reference"
+  echo -e "\t -e, --dense FLAG OPTIONAL if this flag is passed, build the dense rather than sparse index for mapping"
   echo -e "\t -t, --threads OPTIONAL number of threads to use when running [default: min(16, num cores)]"
   echo -e "\t -h, --help display this help message"
 } 
@@ -166,6 +167,7 @@ function simpleaf_index() {
       -t|--threads) threads="$2"; shift ;;
       -s|--spliced) extra_spliced="$2"; shift ;;
       -u|--unspliced) extra_unspliced="$2"; shift ;;
+      -e|--dense) dense_index=1; shift ;;
       -d|--dedup) dedup=1; shift ;;
       -h|--help) help=1; shift ;;
       *) echo "Unknown parameter passed: $1"; exit 1 ;;
@@ -221,7 +223,16 @@ function simpleaf_index() {
   outidx="$output/index" 
   fl=$(( $rlen - 5 ))
 
-  cmd="$salmon index -t $outref/transcriptome_splici_fl$fl.fa -i $outidx -p $threads --sparse"
+  # the default is sparse, but if the user
+  # passed the -e/--dense flag, then don't
+  # pass the sparse flag, and build a dense
+  # index instead.
+  sparse_flag="--sparse"
+  if [[ -z "$dense_index" ]]; then
+    sparse_flag=""
+  fi
+
+  cmd="$salmon index -t $outref/transcriptome_splici_fl$fl.fa -i $outidx -p $threads $sparse_flag"
   echo -e "\nbuilding index:"
   echo "command: $cmd"
   echo "============="

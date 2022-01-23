@@ -53,6 +53,7 @@ the available utilities currently in the repository is:
          -s, --spliced OPTIONAL path to FASTA file with extra spliced sequence to add to the index
          -u, --unspliced OPTIONAL path to FASTA file with extra unspliced sequence to add to the index
          -d, --dedup FLAG OPTIONAL deduplicate identical sequences inside the R script when building the splici reference
+         -e, --dense FLAG OPTIONAL if this flag is passed, build the dense rather than sparse index for mapping
          -t, --threads OPTIONAL number of threads to use when running [default: min(16, num cores)]
          -h, --help display this help message
   ```
