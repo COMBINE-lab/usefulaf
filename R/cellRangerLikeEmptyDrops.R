@@ -80,6 +80,7 @@ NULL
 # Authors: Dongze He, Rob Patro
 # Center of Bioinformatics and Computational Biology, University of Maryland, College Park, Maryland, 20740
 
+#' @importFrom DropletUtils emptyDrops
 .cellRangerLikeEmptyDrops  <- function(m, 
                                       umiMin=500,
                                       umiMinFracMedian=0.01, 

@@ -9,10 +9,10 @@ the available utilities currently in the repository is:
 
 ### R language 
 
-* `build_splici_ref.R` — A script to build a spliced + intron (splici) ref for indexing and quantification with `alevin-fry`.
-* `splici.R` — Contains the `make_splici_txome` function, which is the function called by the `build_splici_ref.R` wrapper script.  If you want to build a splici reference programatically in R code, you can use this function.
-* `cellRangerLikeEmptyDrops.R` — An implementation of the hybrid UMI count filtering and [`emptyDrops`](https://github.com/MarioniLab/DropletUtils) used by CellRanger (and subsequently by [STARsolo](https://github.com/alexdobin/STAR)). This R implementation is a translation of the implemntation in STARsolo, which itself was reverse-engineered from CellRanger. 
-* `load_fry.R` — Contains a function to load `alevin-fry` output (including from USA mode quantification) into a [`SingleCellExperiment`](https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) object.
+* `make_splici_txome()` — A function to build a spliced + intron (_splici_) reference for indexing and quantification with `alevin-fry`. This function is available in the [`roe`](https://github.com/COMBINE-lab/roe) package, which can be installed by following [this instruction](https://github.com/COMBINE-lab/roe#installlation). 
+* `emptyDropsCellRanger()` — An implementation of the hybrid UMI count filtering and [`emptyDrops`](https://github.com/MarioniLab/DropletUtils) used by CellRanger (and subsequently by [STARsolo](https://github.com/alexdobin/STAR)). This function is available in the [DropletUtils](https://bioconductor.org/packages/release/bioc/html/DropletUtils.html) BioConductor package.
+<!-- This R implementation is a translation of the implemntation in STARsolo, which itself was reverse-engineered from CellRanger.  -->
+* `loadFry()` — Contains a function to load `alevin-fry` output (including from USA mode quantification) into a [`SingleCellExperiment`](https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) object. This function is available in the [fishpond](https://bioconductor.org/packages/release/bioc/html/fishpond.html) BioConductor package.
 
 ### Python language
 
