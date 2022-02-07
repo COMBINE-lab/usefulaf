@@ -88,7 +88,7 @@ def load_fry(frydir, which_counts={'X' : ['S','A']}, verbose=False):
                 if verbose:
                     print(f'Found non-USA element in which_count element list \"{v}\" for key \"{k}\"; cannot proceed.')
                 return None
-            if verbose:
+            if verbose and (k != 'X'):
                 print(f'will combine {v} into output layer {k}.') 
 
     elif verbose:
