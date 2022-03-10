@@ -57,6 +57,9 @@ p <- add_argument(p, "--extra-unspliced",
 p <- add_argument(p, "--dedup-seqs", 
 	help="deduplicate identical sequences before writing to output FASTA.", 
 	flag=TRUE)
+p <- add_argument(p, "--pre-flanking-merge", 
+	help="merge introns before adding flanking length.", 
+	flag=TRUE)
 
 # Parse the command line arguments
 argv <- parse_args(p)
@@ -76,4 +79,5 @@ make_splici_txome(gtf_path=argv$gtf,
 		  output_dir=argv$splici_dir,
 		  extra_spliced = argv$extra_spliced,
 		  extra_unspliced = argv$extra_unspliced,
-		  dedup_seqs = argv$dedup_seqs)
+		  dedup_seqs = argv$dedup_seqs
+		  pre_flanking_merge = argv$pre_flanking_merge)
