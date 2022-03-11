@@ -1,6 +1,6 @@
 # Useful utilities for single-cell processing with alevin-fry
 
-[Alevin-fry](https://github.com/COMBINE-lab/alevin-fry) is a fast, accurate and memory-frugal tool for preprocessing single-cell and single-nucleus RNA-seq data.  You can read more about alevin-fry in [its pre-print](https://www.biorxiv.org/content/10.1101/2021.06.29.450377v1).
+[Alevin-fry](https://github.com/COMBINE-lab/alevin-fry) is a fast, accurate and memory-frugal tool for preprocessing single-cell and single-nucleus RNA-seq data.  You can read more about alevin-fry in alevin-fry [pre-print](https://www.biorxiv.org/content/10.1101/2021.06.29.450377v2), and [paper](https://www.nature.com/articles/s41592-022-01408-3).
 
 This respoistory contains scripts, functions and utilities that are useful for preparing data for processing with alevin-fry, as well as for reading alevin-fry data into other packages for downstream analysis.
 
@@ -9,19 +9,19 @@ the available utilities currently in the repository is:
 
 ### R language 
 
-* `make_splici_txome()` — A function to build a spliced + intron (_splici_) reference for indexing and quantification with `alevin-fry`. This function is available in the [`roe`](https://github.com/COMBINE-lab/roe) package, which can be installed by following [this instruction](https://github.com/COMBINE-lab/roe#installlation). 
+* `make_splici_txome()` — A function to build a spliced + intron (_splici_) reference for indexing and quantification with `alevin-fry`. This function is available in the [`roe`](https://github.com/COMBINE-lab/roe) package, which can be installed by following [this instruction](https://github.com/COMBINE-lab/roe#installation). 
 * `emptyDropsCellRanger()` — An implementation of the hybrid UMI count filtering and [`emptyDrops`](https://github.com/MarioniLab/DropletUtils) used by CellRanger (and subsequently by [STARsolo](https://github.com/alexdobin/STAR)). This function is available in the [DropletUtils](https://bioconductor.org/packages/release/bioc/html/DropletUtils.html) BioConductor package.
 * `loadFry()` — Contains a function to load `alevin-fry` output (including from USA mode quantification) into a [`SingleCellExperiment`](https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) object. This function is available in the [fishpond](https://bioconductor.org/packages/release/bioc/html/fishpond.html) BioConductor package.
 
 ### Python language
 
 * `load_fry.py` — Contains a Python function `load_fry` which is intended to load `alevin-fry` output (including from USA mode quantification) into a [`Scanpy`](https://github.com/theislab/scanpy) object.
-
+* `make_splici_txome()` - A python function to build a _splici_ reference for indexing and quantification with `alevin-fry`. This function is available in the [`pyroe`](https://github.com/COMBINE-lab/pyroe) package, which can be installed by following [this instruction](https://github.com/COMBINE-lab/pyroe#installation). 
 ### Bash
 
 * `get_10x_permit_lists.sh` — Provides a script to download the 10x chromium v2 or v3 permit lists.
 * `simpleaf` — Provides a script to run the entire `salmon -> alevin-fry (generate-permit-list > collate > quant)` pipeline, though providing only a simplified set of options.
-
+* `pyroe make-splici` - Provides a CLI to make _splici_ reference for indexing and quantification with `alevin-fry`. It is a part of the [pyroe](https://github.com/COMBINE-lab/pyroe) package. Execute `pyroe make-splici -h` in the terminal after installing `pyroe` for detailed help message. 
 -----------------
 
 ## Using simpleaf
