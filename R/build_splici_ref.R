@@ -52,7 +52,7 @@ p <- add_argument(p, "--flank-trim-length",
 	default=5)
 p <- add_argument(p, "--filename-prefix", 
 	help="The file name prefix of the generated output files.",
-	default="splici")
+	default="splici_fl")
 p <- add_argument(p, "--extra-spliced",
 	help="The path to an extra spliced sequence fasta file.")
 p <- add_argument(p, "--extra-unspliced",
