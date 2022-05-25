@@ -213,7 +213,7 @@ function simpleaf_index() {
     dedup_flag="--dedup-seqs"
   fi
   # $ ./build_splici_ref.R <path_to_genome_fasta> <path_to_gtf> <target_read_length> <output_dir>
-  cmd="./build_splici_ref.R $genome $gtf $rlen $outref $extra_spliced_flag $extra_unspliced_flag $dedup_flag"
+  cmd="./build_splici_ref.R $genome $gtf $rlen $outref $extra_spliced_flag $extra_unspliced_flag $dedup_flag --filename-prefix splici"
   echo -e "\nExtracting the splici reference using command \n\n $cmd \n"
   eval $cmd 
 
@@ -232,8 +232,7 @@ function simpleaf_index() {
     sparse_flag=""
   fi
 
-  cmd="$salmon index -t $outref/transcriptome_splici_fl$fl.fa -i $outidx -p $threads $sparse_flag"
-  echo -e "\nbuilding index:"
+  cmd="$salmon index -t $outref/splici_fl$fl.fa -i $outidx -p $threads $sparse_flag"  echo -e "\nbuilding index:"
   echo "command: $cmd"
   echo "============="
   eval $cmd 
