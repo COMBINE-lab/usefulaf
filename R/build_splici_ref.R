@@ -5,14 +5,15 @@
 
 # install BioC depedencies if necessary
 if ( (!requireNamespace("eisaR", quietly = TRUE)) || 
-     (!requireNamespace("BSgenome", quietly = TRUE)) ) {
+     (!requireNamespace("BSgenome", quietly = TRUE)) || 
+     (!requireNamespace("fishpond", quietly = TRUE)) ) {
 
   # install BioC itself, if we don't have it
   if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
   }
 
-  BiocManager::install(c("eisaR","BSgenome"))
+  BiocManager::install(c("eisaR","BSgenome","fishpond"))
 }
 
 # install argparser
