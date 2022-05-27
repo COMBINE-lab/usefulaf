@@ -238,7 +238,7 @@ function simpleaf_index() {
   echo "============="
   eval $cmd 
 
-  cp $outref/transcriptome_splici_fl${fl}_t2g_3col.tsv $outidx/t2g_3col.tsv
+  cp $outref/splici_fl${fl}_t2g_3col.tsv $outidx/t2g_3col.tsv
   echo -e "\nDone. Wrote index to $outidx"
 }
 
