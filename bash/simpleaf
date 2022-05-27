@@ -232,7 +232,8 @@ function simpleaf_index() {
     sparse_flag=""
   fi
 
-  cmd="$salmon index -t $outref/splici_fl$fl.fa -i $outidx -p $threads $sparse_flag"  echo -e "\nbuilding index:"
+  cmd="$salmon index -t $outref/splici_fl$fl.fa -i $outidx -p $threads $sparse_flag"  
+  echo -e "\nbuilding index:"
   echo "command: $cmd"
   echo "============="
   eval $cmd 
