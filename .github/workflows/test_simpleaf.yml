@@ -16,6 +16,13 @@ jobs:
     - name: Install dependencies
       run: |
         conda env update --file simpleaf_conda_env.yml --name base
+    - name: Checkout roe repo
+      uses: actions/checkout@v3
+      with:
+        repository: COMBINE-lab/roe
+        path: roe
+      run: Rscript -e "devtools::install(pkg="roe")"
+
     - name: Test simpleaf
       run: |
         cd bash
