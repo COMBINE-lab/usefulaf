@@ -23,8 +23,8 @@ jobs:
         path: roe
     - name: install roe
       run: |
-        cd roe
-        Rscript -e "devtools::install()"
+        conda activate 
+        Rscript -e "devtools::install(pkg=\"roe\")"
     - name: Test simpleaf
       run: |
         cd bash
