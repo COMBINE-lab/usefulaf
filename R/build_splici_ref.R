@@ -26,7 +26,7 @@ if (!requireNamespace("devtools", quietly = TRUE))
 
 # install roe from github
 if (!requireNamespace("roe", quietly = TRUE))
-    devtools::install_github("COMBINE-lab/roe",dep = FALSE)
+    devtools::install_github("COMBINE-lab/roe", dep = FALSE)
 
 # load packages
 suppressPackageStartupMessages({
