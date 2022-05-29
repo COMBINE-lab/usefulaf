@@ -24,7 +24,7 @@ jobs:
     - name: install roe
       run: |
         conda activate 
-        Rscript -e "devtools::install(pkg=\"roe\")"
+        Rscript -e "devtools::install(pkg=\"roe\", dependencies=FALSE)"
     - name: Test simpleaf
       run: |
         cd bash
