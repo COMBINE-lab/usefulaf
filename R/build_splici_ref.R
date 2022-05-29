@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 
 # usage :
 # $ ./build_splici_ref.R <path_to_genome_fasta> <path_to_gtf> <target_read_length> <output_dir>
@@ -9,7 +10,7 @@ if ( (!requireNamespace("eisaR", quietly = TRUE)) ||
 
   # install BioC itself, if we don't have it
   if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager", repos = "http://cran.us.r-project.org")
+    install.packages("BiocManager")
   }
 
   BiocManager::install(c("eisaR","BSgenome","fishpond"))
@@ -17,11 +18,11 @@ if ( (!requireNamespace("eisaR", quietly = TRUE)) ||
 
 # install argparser
 if (!requireNamespace("argparser", quietly = TRUE))
-    install.packages("argparser", repos = "http://cran.us.r-project.org")
+    install.packages("argparser")
 
 # install devtools 
 if (!requireNamespace("devtools", quietly = TRUE))
-    install.packages("devtools", repos = "http://cran.us.r-project.org")
+    install.packages("devtools")
 
 # install roe from github
 if (!requireNamespace("roe", quietly = TRUE))

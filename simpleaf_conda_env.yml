@@ -6,11 +6,11 @@ channels:
   - defaults
 
 dependencies:
-  - python=3.10
-  - bioconda::salmon=1.8.0
-  - bioconda::alevin-fry=0.5.1
-  - bioconda::gffread=0.12.7
-  - conda-forge::r-essentials=4.1
+  - python
+  - bioconda::salmon
+  - bioconda::alevin-fry
+  - bioconda::gffread
+  - conda-forge::r-essentials
   - conda-forge::r-devtools
   - conda-forge::r-argparser
   - conda-forge::r-biocmanager
