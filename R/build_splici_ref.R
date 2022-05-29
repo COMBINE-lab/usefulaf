@@ -1,4 +1,3 @@
-#!/usr/bin/env Rscript
 
 # usage :
 # $ ./build_splici_ref.R <path_to_genome_fasta> <path_to_gtf> <target_read_length> <output_dir>
