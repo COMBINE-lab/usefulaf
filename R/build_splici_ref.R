@@ -9,7 +9,7 @@ if ( (!requireNamespace("eisaR", quietly = TRUE)) ||
 
   # install BioC itself, if we don't have it
   if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager",repos = "http://cran.us.r-project.org")
+    install.packages("BiocManager", repos = "http://cran.us.r-project.org")
   }
 
   BiocManager::install(c("eisaR","BSgenome","fishpond"))
@@ -17,11 +17,11 @@ if ( (!requireNamespace("eisaR", quietly = TRUE)) ||
 
 # install argparser
 if (!requireNamespace("argparser", quietly = TRUE))
-    install.packages("argparser")
+    install.packages("argparser", repos = "http://cran.us.r-project.org")
 
 # install devtools 
 if (!requireNamespace("devtools", quietly = TRUE))
-    install.packages("devtools")
+    install.packages("devtools", repos = "http://cran.us.r-project.org")
 
 # install roe from github
 if (!requireNamespace("roe", quietly = TRUE))

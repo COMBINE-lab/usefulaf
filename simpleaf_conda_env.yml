@@ -11,6 +11,8 @@ dependencies:
   - bioconda::alevin-fry=0.5.1
   - bioconda::gffread=0.12.7
   - conda-forge::r-essentials=4.1
+  - conda-forge::r-devtools
+  - conda-forge::r-argparser
   - conda-forge::r-biocmanager
   - bioconductor-eisaR
   - bioconductor-BSgenome
