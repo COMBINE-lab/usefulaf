@@ -1,0 +1,16 @@
+name: simpleaf
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python=3.10
+  - bioconda::salmon=1.8.0
+  - bioconda::alevin-fry=0.5.1
+  - bioconda::gffread=0.12.7
+  - conda-forge::r-essentials=4.1
+  - bioconductor-eisaR
+  - bioconductor-BSgenome
+  - bioconductor-fishpond
