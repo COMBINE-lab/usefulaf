@@ -22,7 +22,9 @@ jobs:
         repository: COMBINE-lab/roe
         path: roe
     - name: install roe
-      run: Rscript -e "devtools::install(pkg="roe")"
+      run: |
+        cd roe
+        Rscript -e "devtools::install()"
     - name: Test simpleaf
       run: |
         cd bash
