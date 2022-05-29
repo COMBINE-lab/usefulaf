@@ -10,7 +10,7 @@ if ( (!requireNamespace("eisaR", quietly = TRUE)) ||
 
   # install BioC itself, if we don't have it
   if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager")
+    install.packages("BiocManager",repos = "http://cran.us.r-project.org")
   }
 
   BiocManager::install(c("eisaR","BSgenome","fishpond"))
