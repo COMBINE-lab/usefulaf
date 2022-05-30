@@ -5,38 +5,27 @@ on:
   pull_request:
 
 jobs:
-  test-simpleaf:
+  test-simpleaf1:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
+    - uses: actions/checkout@v2
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: 3.7
+        mamba-version: "*"
+        channels: conda-forge,bioconda
+        channel-priority: true
+        activate-environment: anaconda-client-env
+        environment-file: simpleaf_conda_env.yml
     - name: Checkout roe repo
       uses: actions/checkout@v3
       with:
         repository: COMBINE-lab/roe
         path: roe
-    - name: traverse roe folder
-      run: |
-        cd roe
-        ls -lh
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-        conda env update --file simpleaf_conda_env.yml --name base
-        conda activate base
-        # Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
-        Rscript -e "devtools::install()"
-    - name: Install dependencies
-      run: |
-        conda env update --file simpleaf_conda_env.yml --name base
     - name: install roe
       run: |
-        Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
+        Rscript -e "devtools::install(pkg=\"roe\", dependencies=FALSE)"
+        # Rscript -e "devtools::install()"
     - name: Test simpleaf
       run: |
         cd bash
@@ -44,3 +33,44 @@ jobs:
         ./test_simpleaf.sh
     - name: Check job status
       run: echo "This job's status is ${{ job.status }}."
+
+# jobs:
+#   test-simpleaf:
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         shell: bash -l {0}
+#     steps:
+#     - name: Checkout
+#       uses: actions/checkout@v3
+
+#     - name: Checkout roe repo
+#       uses: actions/checkout@v3
+#       with:
+#         repository: COMBINE-lab/roe
+#         path: roe
+#     - name: traverse roe folder
+#       run: |
+#         cd roe
+#         ls -lh
+#     - name: Add conda to system path
+#       run: |
+#         # $CONDA is an environment variable pointing to the root of the miniconda directory
+#         echo $CONDA/bin >> $GITHUB_PATH
+#         conda env update --file simpleaf_conda_env.yml --name base
+#         conda activate base
+#         # Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
+#         Rscript -e "devtools::install()"
+#     - name: Install dependencies
+#       run: |
+#         conda env update --file simpleaf_conda_env.yml --name base
+#     - name: install roe
+#       run: |
+#         Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
+#     - name: Test simpleaf
+#       run: |
+#         cd bash
+#         chmod +x test_simpleaf.sh
+#         ./test_simpleaf.sh
+#     - name: Check job status
+#       run: echo "This job's status is ${{ job.status }}."
