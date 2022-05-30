@@ -13,6 +13,10 @@ jobs:
       with:
         repository: COMBINE-lab/roe
         path: roe
+    - name: traverse roe folder
+      run: :
+        cd roe
+        ls -lh
     - uses: actions/checkout@v3
     - name: Add conda to system path
       run: |
@@ -23,7 +27,6 @@ jobs:
         conda env update --file simpleaf_conda_env.yml --name base
     - name: install roe
       run: |
-        cd roe
         Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
     - name: Test simpleaf
       run: |
