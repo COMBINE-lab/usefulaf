@@ -33,6 +33,7 @@ jobs:
         Rscript -e "devtools::install(pkg=\"roe\", dependencies=FALSE)"
         # Rscript -e "devtools::install()"
     - name: Test simpleaf
+      shell: bash -l {0}
       run: |
         cd bash
         chmod +x test_simpleaf.sh
