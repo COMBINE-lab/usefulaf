@@ -23,7 +23,6 @@ jobs:
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
-        cd roe
         echo $CONDA/bin >> $GITHUB_PATH
         conda env update --file simpleaf_conda_env.yml --name base
         # Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
