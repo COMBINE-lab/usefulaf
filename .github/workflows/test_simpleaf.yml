@@ -8,12 +8,12 @@ jobs:
   test-simpleaf:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
     - name: Checkout roe repo
-      # uses: actions/checkout@v3
+      uses: actions/checkout@v3
       with:
         repository: COMBINE-lab/roe
         path: roe
+    - uses: actions/checkout@v3
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
