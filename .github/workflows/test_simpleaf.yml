@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Checkout roe repo
+      uses: actions/checkout@v3
+      with:
+        repository: COMBINE-lab/roe
+        path: roe
     - uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: 3.7
@@ -17,11 +22,6 @@ jobs:
         channel-priority: true
         activate-environment: anaconda-client-env
         environment-file: simpleaf_conda_env.yml
-    - name: Checkout roe repo
-      uses: actions/checkout@v3
-      with:
-        repository: COMBINE-lab/roe
-        path: roe
     - name: install roe
       run: |
         Rscript -e "devtools::install(pkg=\"roe\", dependencies=FALSE)"
