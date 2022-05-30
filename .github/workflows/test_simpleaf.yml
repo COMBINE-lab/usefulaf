@@ -25,11 +25,6 @@ jobs:
     - name: install roe
       shell: bash -l {0}
       run: |
-        conda info
-        conda list
-        conda config --show-sources
-        conda config --show
-        printenv | sort
         Rscript -e "devtools::install(pkg=\"roe\", dependencies=FALSE)"
         # Rscript -e "devtools::install()"
     - name: Test simpleaf
