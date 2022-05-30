@@ -23,7 +23,8 @@ jobs:
         conda env update --file simpleaf_conda_env.yml --name base
     - name: install roe
       run: |
-        Rscript -e "devtools::install(pkg=\"roe\", dependencies=FALSE)"
+        cd roe
+        Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
     - name: Test simpleaf
       run: |
         cd bash
