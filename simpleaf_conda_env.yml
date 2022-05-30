@@ -14,6 +14,7 @@ dependencies:
   - conda-forge::r-devtools
   - conda-forge::r-argparser
   - conda-forge::r-biocmanager
+  - bioconductor-genomicfeatures
   - bioconductor-eisaR
   - bioconductor-bsgenome
   - bioconductor-fishpond
