@@ -25,7 +25,7 @@ jobs:
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
         conda env update --file simpleaf_conda_env.yml --name base
-        source ~/anaconda3/etc/profile.d/conda.sh
+        source ~/miniconda3/etc/profile.d/conda.sh
         conda activate base
         # Rscript -e "devtools::install(pkg=\"./roe\", dependencies=FALSE)"
         Rscript -e "devtools::install()"
