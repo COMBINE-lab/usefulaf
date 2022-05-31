@@ -33,8 +33,8 @@ tar -xf ${WORK_DIR}/toy_read_ref_set.tar.gz -C ${WORK_DIR}
 echo "  - Testing simpleaf index"
 REF_DIR="${WORK_DIR}/toy_read_ref_set/toy_human_ref"
 index_cmd="ALEVIN_FRY_HOME=$ALEVIN_FRY_HOME \
-${DIR}/simpleaf index -f ${REF_DIR}/toy_human_genome.fa \
--g ${REF_DIR}/toy_human_gtf.gtf \
+${DIR}/simpleaf index -f ${REF_DIR}/fasta/genome.fa \
+-g ${REF_DIR}/genes/genes.gtf \
 -l 91 -o ${WORK_DIR}/test_index_outdir"
 eval $index_cmd
 status=$?
