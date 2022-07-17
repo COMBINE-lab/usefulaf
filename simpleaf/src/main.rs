@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use clap::{Parser, Subcommand};
 use cmd_lib::run_fun;
 use semver::{Version, VersionReq};
@@ -8,6 +8,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use which::which;
+
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 #[derive(Debug, Subcommand)]
 enum Commands {
@@ -69,6 +72,7 @@ struct Cli {
 // Holds the paths to the
 // programs we'll need to run
 // the tool.
+#[derive(Serialize, Deserialize)]
 struct ReqProgs {
     salmon: Option<PathBuf>,
     alevin_fry: Option<PathBuf>,
@@ -186,51 +190,99 @@ fn main() -> anyhow::Result<()> {
             unspliced,
             dedup,
             sparse,
-            threads,
+            mut threads,
         } => {
+            let r = run_fun!(mkdir -p $output)?;
+
+            let info_file = output.join("run_info.json");
+            let run_info = json!({
+                "command" : "index",
+                "version_info" : rp,
+                "args" : {
+                    "fasta" : fasta,
+                    "gtf" : gtf,
+                    "rlen" : rlen,
+                    "output" : output,
+                    "spliced" : spliced,
+                    "unspliced" : unspliced,
+                    "dedup" : dedup,
+                    "sparse" : sparse,
+                    "threads" : threads
+                }
+            });
+
+            std::fs::write(&info_file, serde_json::to_string_pretty(&run_info).unwrap())
+                .with_context(|| format!("could not write {}", info_file.display()))?;
+
             let outref = output.join("ref");
             let r = run_fun!(mkdir -p $outref)?;
 
-            let mut cmd_str = format!("{} make-splici", rp.pyroe.unwrap().display());
-
-            //let fp = format!(" --filename-prefix splici");
-            //cmd_str += &fp;
-            let dedup_str = if dedup {
-                Some(String::from("--dedup-seqs"))
-            } else {
-                None
-            };
-
-            let spliced_str = match spliced {
-                Some(es) => Some(format!("--extra-spliced {}", es.display())),
-                None => None,
-            };
-
-            let unspliced_str = match unspliced {
-                Some(eu) => Some(format!("--extra-unspliced {}", eu.display())),
-                None => None,
-            };
-
-            let build_res = match (dedup_str, spliced_str, unspliced_str) {
-                (Some(d), Some(s), Some(u)) => {
-                    run_fun!(pyroe make-splici $d $s $u $fasta $gtf $rlen $outref)?
+            let mut cmd = std::process::Command::new(format!("{}", rp.pyroe.unwrap().display()));
+            // we will run the make-splici command
+            cmd.arg("make-splici");
+            // if the user wants to dedup output sequences
+            if dedup {
+                cmd.arg(String::from("--dedup-seqs"));
+            }
+            // extra spliced sequence
+            match spliced {
+                Some(es) => {
+                    cmd.arg(String::from("--extra-spliced"));
+                    cmd.arg(format!("{}", es.display()));
                 }
-                (Some(d), Some(s), None) => {
-                    run_fun!(pyroe make-splici $d $s $fasta $gtf $rlen $outref)?
+                None => {}
+            }
+            // extra unspliced sequence
+            match unspliced {
+                Some(eu) => {
+                    cmd.arg(String::from("--extra-unspliced"));
+                    cmd.arg(format!("{}", eu.display()));
                 }
-                (Some(d), None, None) => run_fun!(pyroe make-splici $d $fasta $gtf $rlen $outref)?,
-                (Some(d), None, Some(u)) => {
-                    run_fun!(pyroe make-splici $d $u $fasta $gtf $rlen $outref)?
-                }
-                (None, Some(s), Some(u)) => {
-                    run_fun!(pyroe make-splici $s $u $fasta $gtf $rlen $outref)?
-                }
-                (None, Some(s), None) => run_fun!(pyroe make-splici $s $fasta $gtf $rlen $outref)?,
-                (None, None, Some(u)) => run_fun!(pyroe make-splici $u $fasta $gtf $rlen $outref)?,
-                (None, None, None) => run_fun!(pyroe make-splici $fasta $gtf $rlen $outref)?,
-            };
+                None => {}
+            }
 
-            println!("{:?}", build_res);
+            cmd.arg(fasta)
+                .arg(gtf)
+                .arg(format!("{}", rlen))
+                .arg(&outref);
+            let cres = cmd.output()?;
+            println!("{:?}", cres);
+
+            let mut salmon_index_cmd =
+                std::process::Command::new(format!("{}", rp.salmon.unwrap().display()));
+            let ref_prefix = format!("splici_fl{}.fa", rlen - 5);
+            let ref_seq = outref.join(ref_prefix);
+            println!("REFSEQ: {}", ref_seq.display());
+
+            let output_index_dir = output.join("index");
+            salmon_index_cmd
+                .arg("index")
+                .arg("-i")
+                .arg(output_index_dir)
+                .arg("-t")
+                .arg(ref_seq);
+
+            // if the user requested a sparse index.
+            if sparse {
+                salmon_index_cmd.arg("--sparse");
+            }
+            // if the user requested more threads than can be used
+            if let Ok(max_threads_usize) = std::thread::available_parallelism() {
+                let max_threads = max_threads_usize.get() as u32;
+                if threads > max_threads {
+                    println!(
+                        "The maximum available parallelism is {}, but {} threads were requested.",
+                        max_threads, threads
+                    );
+                    println!("setting number of threads to {}", max_threads);
+                    threads = max_threads;
+                }
+            }
+            salmon_index_cmd
+                .arg("--threads")
+                .arg(format!("{}", threads));
+
+            println!("{:?}", salmon_index_cmd.output()?);
         }
         Commands::Quant { index } => {
             println!("index is {}", index);
