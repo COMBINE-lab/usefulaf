@@ -12,6 +12,9 @@ use which::which;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+mod utils;
+use utils::prog_utils::*;
+
 #[derive(Debug, Subcommand)]
 enum Commands {
     /// build the splici index
@@ -69,115 +72,12 @@ struct Cli {
     command: Commands,
 }
 
-// Holds the paths to the
-// programs we'll need to run
-// the tool.
-#[derive(Serialize, Deserialize)]
-struct ReqProgs {
-    salmon: Option<PathBuf>,
-    alevin_fry: Option<PathBuf>,
-    pyroe: Option<PathBuf>,
-}
-
-fn search_for_executable(env_key: &str, prog_name: &str) -> Result<PathBuf> {
-    match env::var(env_key) {
-        Ok(p) => {
-            return Ok(PathBuf::from(p));
-        }
-        Err(e) => {
-            eprintln!("${} is unset {}, trying default path.", env_key, e);
-            eprintln!(
-                "If a satisfactory version is not found, consider setting the ${} variable.",
-                env_key
-            );
-            match which(prog_name) {
-                Ok(p) => {
-                    println!("found `{}` in the PATH at {}", prog_name, p.display());
-                    return Ok(p);
-                }
-                Err(e) => {
-                    return Err(anyhow!(
-                        "could not find `{}` in your path: {}",
-                        prog_name,
-                        e
-                    ));
-                }
-            }
-        }
-    }
-}
-
-fn check_version_constraints<S1: AsRef<str>>(
-    req_string: S1,
-    prog_output: std::result::Result<String, std::io::Error>,
-) -> Result<Version> {
-    match prog_output {
-        Ok(vs) => {
-            let x = vs.split_whitespace();
-            if let Some(version) = x.last() {
-                let parsed_version = Version::parse(version).unwrap();
-                let req = VersionReq::parse(req_string.as_ref()).unwrap();
-                if req.matches(&parsed_version) {
-                    return Ok(parsed_version);
-                } else {
-                    return Err(anyhow!(
-                        "parsed version {:?} does not satisfy constraints {:?}",
-                        version,
-                        req
-                    ));
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Error running salmon {}", e);
-            return Err(anyhow!("could not parse program output"));
-        }
-    }
-    Err(anyhow!("invalid version string"))
-}
-
-fn get_required_progs() -> Result<ReqProgs> {
-    let mut rp = ReqProgs {
-        salmon: None,
-        alevin_fry: None,
-        pyroe: None,
-    };
-
-    // First look for any environment variables
-    // then check the path.
-    rp.salmon = Some(search_for_executable("SALMON", "salmon")?);
-    rp.alevin_fry = Some(search_for_executable("ALEVIN_FRY", "alevin-fry")?);
-    rp.pyroe = Some(search_for_executable("PYROE", "pyroe")?);
-
-    if let Some(salmon) = rp.salmon.clone() {
-        let st = salmon.display().to_string();
-        println!("st = {}", st);
-        let sr = run_fun!($st --version);
-        let v = check_version_constraints(">=1.5.1, <2.0.0", sr)?;
-        println!("{:?}, {}", v, v);
-    }
-
-    if let Some(af) = rp.alevin_fry.clone() {
-        let st = af.display().to_string();
-        println!("st = {}", st);
-        let sr = run_fun!($st --version);
-        let v = check_version_constraints(">=0.4.1, <1.0.0", sr)?;
-        println!("** {:?}, {}", v, v);
-    }
-
-    if let Some(pr) = rp.pyroe.clone() {
-        let st = pr.display().to_string();
-        println!("st = {}", st);
-        let sr = run_fun!($st --version);
-        let v = check_version_constraints(">=0.6.2, <1.0.0", sr)?;
-        println!("** {:?}, {}", v, v);
-    }
-    Ok(rp)
-}
 
 fn main() -> anyhow::Result<()> {
+    // gather information about the required 
+    // programs.
     let rp = get_required_progs()?;
-
+    
     let cli_args = Cli::parse();
 
     match cli_args.command {
@@ -220,10 +120,12 @@ fn main() -> anyhow::Result<()> {
             let mut cmd = std::process::Command::new(format!("{}", rp.pyroe.unwrap().display()));
             // we will run the make-splici command
             cmd.arg("make-splici");
+
             // if the user wants to dedup output sequences
             if dedup {
                 cmd.arg(String::from("--dedup-seqs"));
             }
+           
             // extra spliced sequence
             match spliced {
                 Some(es) => {
@@ -232,6 +134,7 @@ fn main() -> anyhow::Result<()> {
                 }
                 None => {}
             }
+           
             // extra unspliced sequence
             match unspliced {
                 Some(eu) => {
@@ -245,14 +148,12 @@ fn main() -> anyhow::Result<()> {
                 .arg(gtf)
                 .arg(format!("{}", rlen))
                 .arg(&outref);
-            let cres = cmd.output()?;
-            println!("{:?}", cres);
+            let _cres = cmd.output()?;
 
             let mut salmon_index_cmd =
                 std::process::Command::new(format!("{}", rp.salmon.unwrap().display()));
             let ref_prefix = format!("splici_fl{}.fa", rlen - 5);
             let ref_seq = outref.join(ref_prefix);
-            println!("REFSEQ: {}", ref_seq.display());
 
             let output_index_dir = output.join("index");
             salmon_index_cmd
@@ -266,6 +167,7 @@ fn main() -> anyhow::Result<()> {
             if sparse {
                 salmon_index_cmd.arg("--sparse");
             }
+
             // if the user requested more threads than can be used
             if let Ok(max_threads_usize) = std::thread::available_parallelism() {
                 let max_threads = max_threads_usize.get() as u32;
@@ -278,11 +180,12 @@ fn main() -> anyhow::Result<()> {
                     threads = max_threads;
                 }
             }
+           
             salmon_index_cmd
                 .arg("--threads")
                 .arg(format!("{}", threads));
 
-            println!("{:?}", salmon_index_cmd.output()?);
+            salmon_index_cmd.output().expect("failed to run salmon index");
         }
         Commands::Quant { index } => {
             println!("index is {}", index);
