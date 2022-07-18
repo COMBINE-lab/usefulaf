@@ -1,10 +1,9 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use cmd_lib::run_fun;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
-use std::process::Command;
 use which::which;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -105,21 +104,30 @@ pub fn get_required_progs() -> Result<ReqProgs> {
         let st = salmon.display().to_string();
         let sr = run_fun!($st --version);
         let v = check_version_constraints(">=1.5.1, <2.0.0", sr)?;
-        rp.salmon = Some(ProgInfo{ exe_path: salmon, version: format!("{}",v)});
+        rp.salmon = Some(ProgInfo {
+            exe_path: salmon,
+            version: format!("{}", v),
+        });
     }
 
     if let Some(af) = alevin_fry_exe.clone() {
         let st = af.display().to_string();
         let sr = run_fun!($st --version);
         let v = check_version_constraints(">=0.4.1, <1.0.0", sr)?;
-        rp.alevin_fry = Some(ProgInfo{ exe_path: af, version: format!("{}",v)});
+        rp.alevin_fry = Some(ProgInfo {
+            exe_path: af,
+            version: format!("{}", v),
+        });
     }
 
     if let Some(pr) = pyroe_exe.clone() {
         let st = pr.display().to_string();
         let sr = run_fun!($st --version);
         let v = check_version_constraints(">=0.6.2, <1.0.0", sr)?;
-        rp.pyroe = Some(ProgInfo{ exe_path: pr, version: format!("{}",v)});
+        rp.pyroe = Some(ProgInfo {
+            exe_path: pr,
+            version: format!("{}", v),
+        });
     }
     Ok(rp)
 }

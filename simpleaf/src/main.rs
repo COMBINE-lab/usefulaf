@@ -1,15 +1,10 @@
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{ArgGroup, Parser, Subcommand};
 use cmd_lib::run_fun;
-use semver::{Version, VersionReq};
 use std::env;
-use std::ffi::OsStr;
-use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
 use which::which;
 
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 mod utils;
@@ -165,8 +160,9 @@ fn get_permit_if_absent(chem: Chemistry) -> Result<PermitListResult> {
                     .arg("-L")
                     .arg(dl_url);
                 let r = dl_cmd.output()?;
-                //let r = run_fun!(wget -v -O $odir/$chem_file -L $dl_url)?;
-                //println!("DL OUTPUT {:?}", r);
+                if !r.status.success() {
+                    return Err(anyhow!("failed to download permit list {:?}", r.status));
+                }
                 return Ok(PermitListResult::DownloadSuccessful(odir.join(chem_file)));
             }
         }
@@ -198,12 +194,11 @@ fn main() -> anyhow::Result<()> {
             sparse,
             mut threads,
         } => {
-            let r = run_fun!(mkdir -p $output)?;
-
+            run_fun!(mkdir -p $output)?;
             let ref_file = format!("splici_fl{}.fa", rlen - 5);
 
             let outref = output.join("ref");
-            let r = run_fun!(mkdir -p $outref)?;
+            run_fun!(mkdir -p $outref)?;
 
             let t2g_file = outref.join(format!("splici_fl{}_t2g_3col.tsv", rlen - 5));
             let info_file = output.join("index_info.json");
@@ -230,7 +225,8 @@ fn main() -> anyhow::Result<()> {
             )
             .with_context(|| format!("could not write {}", info_file.display()))?;
 
-            let mut cmd = std::process::Command::new(format!("{}", rp.pyroe.unwrap().exe_path.display()));
+            let mut cmd =
+                std::process::Command::new(format!("{}", rp.pyroe.unwrap().exe_path.display()));
             // we will run the make-splici command
             cmd.arg("make-splici");
 
@@ -359,6 +355,9 @@ fn main() -> anyhow::Result<()> {
                 };
             }
             // otherwise it must have been knee;
+            if !knee {
+                bail!("It seems no valid filtering strategy was provided!");
+            }
 
             let mut salmon_quant_cmd =
                 std::process::Command::new(format!("{}", rp.salmon.unwrap().exe_path.display()));
@@ -488,10 +487,7 @@ fn main() -> anyhow::Result<()> {
                 .expect("could not execute [quant]");
 
             if !quant_proc_out.status.success() {
-                bail!(
-                    "quant failed with exit status {:?}",
-                    quant_proc_out.status
-                );
+                bail!("quant failed with exit status {:?}", quant_proc_out.status);
             }
         }
     }
