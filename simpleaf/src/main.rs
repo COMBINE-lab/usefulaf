@@ -1,11 +1,16 @@
+extern crate env_logger;
+#[macro_use]
+extern crate log;
+
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{ArgGroup, Parser, Subcommand};
 use cmd_lib::run_fun;
+use env_logger::Env;
+use serde_json::json;
+
 use std::env;
 use std::io::BufReader;
 use std::path::PathBuf;
-
-use serde_json::json;
 
 mod utils;
 use utils::af_utils::*;
@@ -192,14 +197,10 @@ fn get_permit_if_absent(chem: Chemistry) -> Result<PermitListResult> {
 }
 
 fn main() -> anyhow::Result<()> {
-    // gather information about the required
-    // programs.
-
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     const AF_HOME: &str = "ALEVIN_FRY_HOME";
     let af_home_path = match env::var(AF_HOME) {
-        Ok(p) => {
-            PathBuf::from(p)
-        }
+        Ok(p) => PathBuf::from(p),
         Err(e) => {
             bail!(
                 "${} is unset {}, please set this environment variable to continue.",
@@ -335,7 +336,7 @@ fn main() -> anyhow::Result<()> {
             salmon_index_cmd
                 .arg("index")
                 .arg("-i")
-                .arg(output_index_dir)
+                .arg(&output_index_dir)
                 .arg("-t")
                 .arg(ref_seq);
 
@@ -348,11 +349,11 @@ fn main() -> anyhow::Result<()> {
             if let Ok(max_threads_usize) = std::thread::available_parallelism() {
                 let max_threads = max_threads_usize.get() as u32;
                 if threads > max_threads {
-                    println!(
+                    warn!(
                         "The maximum available parallelism is {}, but {} threads were requested.",
                         max_threads, threads
                     );
-                    println!("setting number of threads to {}", max_threads);
+                    warn!("setting number of threads to {}", max_threads);
                     threads = max_threads;
                 }
             }
@@ -364,6 +365,10 @@ fn main() -> anyhow::Result<()> {
             salmon_index_cmd
                 .output()
                 .expect("failed to run salmon index");
+
+            // copy over the t2g file to the index
+            let index_t2g_path = output_index_dir.join("t2g_3col.tsv");
+            std::fs::copy(t2g_file, index_t2g_path)?;
         }
         Commands::Quant {
             index,
@@ -390,11 +395,11 @@ fn main() -> anyhow::Result<()> {
             let simpleaf_info_reader = BufReader::new(&simpleaf_info_file);
 
             // Read the JSON contents of the file as an instance of `User`.
-            println!("deserializing from {:?}", simpleaf_info_file);
+            info!("deserializing from {:?}", simpleaf_info_file);
             let v: serde_json::Value = serde_json::from_reader(simpleaf_info_reader)?;
             let rp: ReqProgs = serde_json::from_value(v["prog_info"].clone())?;
 
-            println!("prog info = {:?}", rp);
+            info!("prog info = {:?}", rp);
 
             let mut filter_meth_opt = None;
             let chem = match chemistry.as_str() {
@@ -504,7 +509,7 @@ fn main() -> anyhow::Result<()> {
                 }
             };
 
-            println!("cmd : {:?}", salmon_quant_cmd);
+            info!("cmd : {:?}", salmon_quant_cmd);
             let map_proc_out = salmon_quant_cmd
                 .output()
                 .expect("failed to execute salmon alevin [mapping phase]");
@@ -527,7 +532,7 @@ fn main() -> anyhow::Result<()> {
             let gpl_output = output.join("af_quant");
             alevin_gpl_cmd.arg("-o").arg(&gpl_output);
 
-            println!("cmd : {:?}", alevin_gpl_cmd);
+            info!("cmd : {:?}", alevin_gpl_cmd);
 
             let gpl_proc_out = alevin_gpl_cmd
                 .output()
@@ -551,7 +556,7 @@ fn main() -> anyhow::Result<()> {
             alevin_collate_cmd.arg("-r").arg(&map_output);
             alevin_collate_cmd.arg("-t").arg(format!("{}", threads));
 
-            println!("cmd : {:?}", alevin_collate_cmd);
+            info!("cmd : {:?}", alevin_collate_cmd);
             let collate_proc_out = alevin_collate_cmd
                 .output()
                 .expect("could not execute [collate]");
@@ -579,7 +584,7 @@ fn main() -> anyhow::Result<()> {
             alevin_quant_cmd.arg("-m").arg(t2g_map);
             alevin_quant_cmd.arg("-r").arg(resolution);
 
-            println!("cmd : {:?}", alevin_quant_cmd);
+            info!("cmd : {:?}", alevin_quant_cmd);
             let quant_proc_out = alevin_quant_cmd
                 .output()
                 .expect("could not execute [quant]");

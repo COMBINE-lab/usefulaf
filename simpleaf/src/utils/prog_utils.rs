@@ -79,9 +79,7 @@ pub fn get_which_executable(prog_name: &str) -> Result<PathBuf> {
 #[allow(dead_code)]
 pub fn search_for_executable(env_key: &str, prog_name: &str) -> Result<PathBuf> {
     match env::var(env_key) {
-        Ok(p) => {
-            Ok(PathBuf::from(p))
-        }
+        Ok(p) => Ok(PathBuf::from(p)),
         Err(e) => {
             eprintln!("${} is unset {}, trying default path.", env_key, e);
             eprintln!(
