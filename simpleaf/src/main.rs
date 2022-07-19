@@ -2,8 +2,8 @@ use anyhow::{anyhow, bail, Context, Result};
 use clap::{ArgGroup, Parser, Subcommand};
 use cmd_lib::run_fun;
 use std::env;
+use std::io::BufReader;
 use std::path::PathBuf;
-use which::which;
 
 use serde_json::json;
 
@@ -84,6 +84,10 @@ enum Commands {
         #[clap(short, long, action)]
         unfiltered_pl: bool,
 
+        /// use a filtered, explicit permit list
+        #[clap(short, long, value_parser)]
+        explicit_pl: Option<PathBuf>,
+
         /// use forced number of cells
         #[clap(short, long, value_parser)]
         forced_cells: Option<usize>,
@@ -93,7 +97,7 @@ enum Commands {
         expect_cells: Option<usize>,
 
         /// resolution mode
-        #[clap(short, long, value_parser)]
+        #[clap(short, long, value_parser = clap::builder::PossibleValuesParser::new(["cr-like", "cr-like-em", "parsimony", "parsimony-em", "parsimony-gene", "parsimony-gene-em"]))]
         resolution: String,
 
         /// chemistry
@@ -107,6 +111,18 @@ enum Commands {
         /// output directory
         #[clap(short, long, value_parser)]
         output: PathBuf,
+    },
+    /// set paths to the programs that simpleaf will use
+    SetPaths {
+        /// path to salmon to use
+        #[clap(short, long, value_parser)]
+        salmon: Option<PathBuf>,
+        /// path to alein-fry to use
+        #[clap(short, long, value_parser)]
+        alevin_fry: Option<PathBuf>,
+        /// path to pyroe to use
+        #[clap(short, long, value_parser)]
+        pyroe: Option<PathBuf>,
     },
 }
 
@@ -149,7 +165,7 @@ fn get_permit_if_absent(chem: Chemistry) -> Result<PermitListResult> {
         Ok(p) => {
             let odir = PathBuf::from(p).join("plist");
             if odir.join(chem_file).exists() {
-                return Ok(PermitListResult::AlreadyPresent(odir.join(chem_file)));
+                Ok(PermitListResult::AlreadyPresent(odir.join(chem_file)))
             } else {
                 run_fun!(mkdir -p $odir)?;
                 let mut dl_cmd = std::process::Command::new("wget");
@@ -163,7 +179,7 @@ fn get_permit_if_absent(chem: Chemistry) -> Result<PermitListResult> {
                 if !r.status.success() {
                     return Err(anyhow!("failed to download permit list {:?}", r.status));
                 }
-                return Ok(PermitListResult::DownloadSuccessful(odir.join(chem_file)));
+                Ok(PermitListResult::DownloadSuccessful(odir.join(chem_file)))
             }
         }
         Err(e) => {
@@ -178,11 +194,50 @@ fn get_permit_if_absent(chem: Chemistry) -> Result<PermitListResult> {
 fn main() -> anyhow::Result<()> {
     // gather information about the required
     // programs.
-    let rp = get_required_progs()?;
+
+    const AF_HOME: &str = "ALEVIN_FRY_HOME";
+    let af_home_path = match env::var(AF_HOME) {
+        Ok(p) => {
+            PathBuf::from(p)
+        }
+        Err(e) => {
+            bail!(
+                "${} is unset {}, please set this environment variable to continue.",
+                AF_HOME,
+                e
+            );
+        }
+    };
 
     let cli_args = Cli::parse();
 
     match cli_args.command {
+        Commands::SetPaths {
+            salmon,
+            alevin_fry,
+            pyroe,
+        } => {
+            let rp = get_required_progs_from_paths(salmon, alevin_fry, pyroe)?;
+
+            if rp.salmon.is_none() {
+                bail!("Suitable salmon executable not found");
+            }
+            if rp.alevin_fry.is_none() {
+                bail!("Suitable alevin_fry executable not found");
+            }
+            if rp.pyroe.is_none() {
+                bail!("Suitable pyroe executable not found");
+            }
+
+            let simpleaf_info_file = af_home_path.join("simpleaf_info.json");
+            let simpleaf_info = json!({ "prog_info": rp });
+
+            std::fs::write(
+                &simpleaf_info_file,
+                serde_json::to_string_pretty(&simpleaf_info).unwrap(),
+            )
+            .with_context(|| format!("could not write {}", simpleaf_info_file.display()))?;
+        }
         Commands::Index {
             fasta,
             gtf,
@@ -194,6 +249,19 @@ fn main() -> anyhow::Result<()> {
             sparse,
             mut threads,
         } => {
+            // Open the file in read-only mode with buffer.
+            let af_info_p = af_home_path.join("simpleaf_info.json");
+            let simpleaf_info_file = std::fs::File::open(&af_info_p).with_context({
+                ||
+                format!("Could not open file {}; please run the set-paths command before using `index` or `quant`", af_info_p.display())
+            })?;
+
+            let simpleaf_info_reader = BufReader::new(simpleaf_info_file);
+
+            // Read the JSON contents of the file as an instance of `User`.
+            let v: serde_json::Value = serde_json::from_reader(simpleaf_info_reader)?;
+            let rp: ReqProgs = serde_json::from_value(v["prog_info"].clone())?;
+
             run_fun!(mkdir -p $output)?;
             let ref_file = format!("splici_fl{}.fa", rlen - 5);
 
@@ -304,6 +372,7 @@ fn main() -> anyhow::Result<()> {
             threads,
             knee,
             unfiltered_pl,
+            explicit_pl,
             forced_cells,
             expect_cells,
             resolution,
@@ -311,9 +380,23 @@ fn main() -> anyhow::Result<()> {
             chemistry,
             output,
         } => {
-            println!("index is {}", index.display());
+            // Open the file in read-only mode with buffer.
+            let af_info_p = af_home_path.join("simpleaf_info.json");
+            let simpleaf_info_file = std::fs::File::open(&af_info_p).with_context({
+                ||
+                format!("Could not open file {}; please run the set-paths command before using `index` or `quant`", af_info_p.display())
+            })?;
 
-            let mut filter_meth = CellFilterMethod::KneeFinding;
+            let simpleaf_info_reader = BufReader::new(&simpleaf_info_file);
+
+            // Read the JSON contents of the file as an instance of `User`.
+            println!("deserializing from {:?}", simpleaf_info_file);
+            let v: serde_json::Value = serde_json::from_reader(simpleaf_info_reader)?;
+            let rp: ReqProgs = serde_json::from_value(v["prog_info"].clone())?;
+
+            println!("prog info = {:?}", rp);
+
+            let mut filter_meth_opt = None;
             let chem = match chemistry.as_str() {
                 "10xv2" => Chemistry::TenxV2,
                 "10xv3" => Chemistry::TenxV3,
@@ -328,10 +411,10 @@ fn main() -> anyhow::Result<()> {
                 match pl_res {
                     PermitListResult::DownloadSuccessful(p)
                     | PermitListResult::AlreadyPresent(p) => {
-                        filter_meth = CellFilterMethod::UnfilteredExternalList(
+                        filter_meth_opt = Some(CellFilterMethod::UnfilteredExternalList(
                             p.to_string_lossy().into_owned(),
                             min_cells,
-                        );
+                        ));
                     }
                     PermitListResult::UnregisteredChemistry => {
                         bail!(
@@ -341,23 +424,38 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             } else {
+                match explicit_pl {
+                    Some(filtered_path) => {
+                        filter_meth_opt = Some(CellFilterMethod::ExplicitList(
+                            filtered_path.to_string_lossy().into_owned(),
+                        ));
+                    }
+                    None => {}
+                };
                 match forced_cells {
                     Some(num_forced) => {
-                        filter_meth = CellFilterMethod::ForceCells(num_forced);
+                        filter_meth_opt = Some(CellFilterMethod::ForceCells(num_forced));
                     }
                     None => {}
                 };
                 match expect_cells {
                     Some(num_expected) => {
-                        filter_meth = CellFilterMethod::ExpectCells(num_expected);
+                        filter_meth_opt = Some(CellFilterMethod::ExpectCells(num_expected));
                     }
                     None => {}
                 };
             }
             // otherwise it must have been knee;
-            if !knee {
+            if knee {
+                filter_meth_opt = Some(CellFilterMethod::KneeFinding);
+            }
+
+            if filter_meth_opt.is_none() {
                 bail!("It seems no valid filtering strategy was provided!");
             }
+
+            // here we must be safe to unwrap
+            let filter_meth = filter_meth_opt.unwrap();
 
             let mut salmon_quant_cmd =
                 std::process::Command::new(format!("{}", rp.salmon.unwrap().exe_path.display()));
