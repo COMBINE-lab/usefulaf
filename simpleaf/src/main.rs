@@ -7,6 +7,7 @@ use clap::{ArgGroup, Parser, Subcommand};
 use cmd_lib::run_fun;
 use env_logger::Env;
 use serde_json::json;
+use time::Instant;
 
 use std::env;
 use std::io::BufReader;
@@ -326,7 +327,14 @@ fn main() -> anyhow::Result<()> {
                 .arg(gtf)
                 .arg(format!("{}", rlen))
                 .arg(&outref);
-            let _cres = cmd.output()?;
+
+            let pyroe_start = Instant::now();
+            let cres = cmd.output()?;
+            let pyroe_duration = pyroe_start.elapsed();
+
+            if !cres.status.success() {
+                bail!("pyroe failed to return succesfully {:?}", cres.status);
+            }
 
             let mut salmon_index_cmd =
                 std::process::Command::new(format!("{}", rp.salmon.unwrap().exe_path.display()));
@@ -362,13 +370,29 @@ fn main() -> anyhow::Result<()> {
                 .arg("--threads")
                 .arg(format!("{}", threads));
 
+            let index_start = Instant::now();
             salmon_index_cmd
                 .output()
                 .expect("failed to run salmon index");
+            let index_duration = index_start.elapsed();
 
             // copy over the t2g file to the index
             let index_t2g_path = output_index_dir.join("t2g_3col.tsv");
             std::fs::copy(t2g_file, index_t2g_path)?;
+
+            let index_log_file = output.join("simpleaf_index_log.json");
+            let index_log_info = json!({
+                "time_info" : {
+                    "pyroe_time" : pyroe_duration,
+                    "index_time" : index_duration
+                }
+            });
+
+            std::fs::write(
+                &index_log_file,
+                serde_json::to_string_pretty(&index_log_info).unwrap(),
+            )
+            .with_context(|| format!("could not write {}", index_log_file.display()))?;
         }
         Commands::Quant {
             index,
@@ -510,9 +534,12 @@ fn main() -> anyhow::Result<()> {
             };
 
             info!("cmd : {:?}", salmon_quant_cmd);
+            let map_start = Instant::now();
             let map_proc_out = salmon_quant_cmd
                 .output()
                 .expect("failed to execute salmon alevin [mapping phase]");
+            let map_duration = map_start.elapsed();
+
             if !map_proc_out.status.success() {
                 bail!("mapping failed with exit status {:?}", map_proc_out.status);
             }
@@ -534,9 +561,11 @@ fn main() -> anyhow::Result<()> {
 
             info!("cmd : {:?}", alevin_gpl_cmd);
 
+            let gpl_start = Instant::now();
             let gpl_proc_out = alevin_gpl_cmd
                 .output()
                 .expect("could not execute [generate permit list]");
+            let gpl_duration = gpl_start.elapsed();
 
             if !gpl_proc_out.status.success() {
                 bail!(
@@ -557,9 +586,11 @@ fn main() -> anyhow::Result<()> {
             alevin_collate_cmd.arg("-t").arg(format!("{}", threads));
 
             info!("cmd : {:?}", alevin_collate_cmd);
+            let collate_start = Instant::now();
             let collate_proc_out = alevin_collate_cmd
                 .output()
                 .expect("could not execute [collate]");
+            let collate_duration = collate_start.elapsed();
 
             if !collate_proc_out.status.success() {
                 bail!(
@@ -585,13 +616,31 @@ fn main() -> anyhow::Result<()> {
             alevin_quant_cmd.arg("-r").arg(resolution);
 
             info!("cmd : {:?}", alevin_quant_cmd);
+            let quant_start = Instant::now();
             let quant_proc_out = alevin_quant_cmd
                 .output()
                 .expect("could not execute [quant]");
+            let quant_duration = quant_start.elapsed();
 
             if !quant_proc_out.status.success() {
                 bail!("quant failed with exit status {:?}", quant_proc_out.status);
             }
+
+            let af_quant_info_file = output.join("simpleaf_quant_log.json");
+            let af_quant_info = json!({
+                "time_info" : {
+                "map_time" : map_duration,
+                "gpl_time" : gpl_duration,
+                "collate_time" : collate_duration,
+                "quant_time" : quant_duration
+                }
+            });
+
+            std::fs::write(
+                &af_quant_info_file,
+                serde_json::to_string_pretty(&af_quant_info).unwrap(),
+            )
+            .with_context(|| format!("could not write {}", af_quant_info_file.display()))?;
         }
     }
     Ok(())
