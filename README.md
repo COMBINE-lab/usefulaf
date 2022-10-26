@@ -1,6 +1,7 @@
 # Usefulaf: An all-in-one Docker/Singularity image for single-cell processing with alevin-fry
 
-[`Usefulaf`](https://hub.docker.com/r/combinelab/usefulaf/tags) is an all-in-one Docker/Singularity image for single-cell processing with [Alevin-fry](https://github.com/COMBINE-lab/alevin-fry)([paper](https://www.nature.com/articles/s41592-022-01408-3)). It includes all tools you need to turn your FASTQ files into a count matrix and then load it into your favorite analysis environment. Specifically, this image includes
+[`Usefulaf`](https://hub.docker.com/r/combinelab/usefulaf/tags) is an all-in-one Docker/Singularity image for single-cell processing with [Alevin-fry](https://github.com/COMBINE-lab/alevin-fry)([paper](https://www.nature.com/articles/s41592-022-01408-3)). It includes the all tools you need to turn your FASTQ files into a count matrix and then load it into your favorite analysis environment. Specifically, this image includes:
+
 - [`simpleaf`](https://github.com/COMBINE-lab/simpleaf): A simplified interface to indexing and quantifying with `alevin-fry`.
 - [`pyroe`](https://github.com/COMBINE-lab/pyroe): An alevin-fry utility python package for building splici references, converting alevin-fry output formats, loading count matrix in Python, adding gene names (instead of just gene IDs) to output matrices, etc.
 - [`fishpond::loadFry()`](https://rdrr.io/github/mikelove/fishpond/man/loadFry.html): A R function for loading count matrix as [SingleCellExperiment](https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) object.
