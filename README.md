@@ -8,7 +8,7 @@
 
 For processing data simply using the `usefulaf` image, check our latest tutorial [here](https://combine-lab.github.io/alevin-fry-tutorials/2021/quickstart-usefulaf-singularity/).
 
-For pulling the Singularity image, please run the following code in bash. Note that the image is $\sim 1.65$ GB.
+For pulling the Singularity image, please run the following code in bash. Note that the image is $\sim$ 1.65 GB.
 
 ```bash
 # if you use Docker
